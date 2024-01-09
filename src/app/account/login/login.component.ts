@@ -8,6 +8,7 @@ import { AuthenticationService } from '../../core/services/auth.service';
 import { AuthfakeauthenticationService } from '../../core/services/authfake.service';
 import { first } from 'rxjs/operators';
 import { ToastService } from './toast-service';
+import { TokenStorageService } from 'src/app/core/services/token-storage.service';
 
 @Component({
   selector: 'app-login',
@@ -26,52 +27,97 @@ export class LoginComponent implements OnInit {
   fieldTextType!: boolean;
   error = '';
   returnUrl!: string;
+  isRemembered: boolean = false;
+  isLoginFailed: boolean = false;
+  errorMessage: string = "";
+  isOnRefresh: boolean = false;
+  loading: boolean = false;
   // set the current year
   year: number = new Date().getFullYear();
 
-  constructor(private formBuilder: FormBuilder,private authenticationService: AuthenticationService,private router: Router,
+  constructor(private formBuilder: FormBuilder,private authenticationService: AuthenticationService,private router: Router, private tokenService: TokenStorageService,
     private authFackservice: AuthfakeauthenticationService,private route: ActivatedRoute, public toastService: ToastService) {
       // redirect to home if already logged in
-      if (this.authenticationService.currentUserValue) {
-        this.router.navigate(['/']);
-      }
+      // if (this.authenticationService.currentUserValue) {
+      //   this.router.navigate(['/']);
+      // }
      }
 
   ngOnInit(): void {
-    if(localStorage.getItem('currentUser')) {
-      this.router.navigate(['/']);
-    }
-    /**
-     * Form Validatyion
-     */
-     this.loginForm = this.formBuilder.group({
-      email: ['admin@themesbrand.com', [Validators.required, Validators.email]],
-      password: ['123456', [Validators.required]],
+    this.route.queryParams.subscribe((params: any) => {
+      if (params.returnUrl) {
+        this.returnUrl = params.returnUrl
+      }
+    })
+
+    this.loginForm = this.formBuilder.group({
+      email: ['', [Validators.required]],
+      password: ['', [Validators.required]],
     });
+    
     // get return url from route parameters or default to '/'
-    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
+    if (!this.authenticationService.isAuthenticated()) {
+      const refreshToken = this.tokenService.getRefreshToken();
+      if (refreshToken !== null) {
+        this.updateToken(refreshToken)
+      } else {
+        return;
+      }
+    } else {
+      this.isOnRefresh = true
+      if (this.returnUrl) this.router.navigateByUrl(this.returnUrl)
+      else this.router.navigate(['/'])
+    }
   }
 
   // convenience getter for easy access to form fields
   get f() { return this.loginForm.controls; }
 
+  onRememberMeChecked() {
+    if (!this.isRemembered) {
+      this.isRemembered = true;
+    } else this.isRemembered = false;
+  }
+
+
   /**
    * Form submit
    */
    onSubmit() {
-    this.submitted = true;
-
+    this.loading = true;
+    this.submitted = false;
+    this.isLoginFailed = false
      // Login Api
-     this.authenticationService.login(this.f['email'].value, this.f['password'].value).subscribe((data:any) => {      
-      if(data.status == 'success'){
-        localStorage.setItem('toast', 'true');
-        localStorage.setItem('currentUser', JSON.stringify(data.data));
-        localStorage.setItem('token', data.token);
-        this.router.navigate(['/']);
-      } else {
-        this.toastService.show(data.data, { classname: 'bg-danger text-white', delay: 15000 });
+     this.authenticationService.login(this.f['email'].value, this.f['password'].value).subscribe({
+      next: (data: any) => {
+        this.loading = false
+        if (!data.error) {
+          if (!this.isRemembered) {
+            this.tokenService.setToken(data.token);
+            this.tokenService.setUserData(data.userData);
+          } else {
+            this.tokenService.setAuthData(
+              data.token,
+              data.refreshToken,
+              data.userData
+            );
+          }
+          if (this.returnUrl) this.router.navigateByUrl(this.returnUrl)
+          else this.router.navigate(["/"]);
+        
+        } else {
+          this.errorMessage = data.message
+          this.isLoginFailed = true;
+        }
+        this.submitted = true
+      },
+      error: (err) => {
+        this.loading = false
+        this.submitted = true
+        this.errorMessage = `${err}`;
+        this.isLoginFailed = true;
       }
-    });
+     });
 
     // stop here if form is invalid
     // if (this.loginForm.invalid) {
@@ -100,6 +146,27 @@ export class LoginComponent implements OnInit {
    */
    toggleFieldTextType() {
     this.fieldTextType = !this.fieldTextType;
+  }
+
+  updateToken(token: any) {
+    this.isOnRefresh = true
+    this.authenticationService.updateToken(token).subscribe({
+      next: (res: any) => {
+        if (!res.error && res.accessToken) {
+          this.tokenService.setToken(res.accessToken);
+          this.tokenService.setUserData(res.payload.data)
+        } else {
+          console.error(res.message)
+          this.isOnRefresh = false
+        }
+      },
+      error: (err) => console.error(err),
+      complete: () => {
+        this.isOnRefresh = false
+        if (this.returnUrl) this.router.navigateByUrl(this.returnUrl)
+        else this.router.navigate(['/'])
+      }
+    })
   }
 
 }

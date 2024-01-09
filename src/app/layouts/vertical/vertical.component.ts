@@ -20,7 +20,7 @@ export class VerticalComponent implements OnInit {
     }
     document.documentElement.setAttribute('data-topbar', 'light');
     document.documentElement.setAttribute('data-sidebar', 'light');
-    document.documentElement.setAttribute('data-sidebar-size', 'lg');
+    document.documentElement.setAttribute('data-sidebar-size', 'sm');
     document.documentElement.setAttribute('data-layout-style', 'default');
     document.documentElement.setAttribute('data-layout-mode', 'light');
     document.documentElement.setAttribute('data-layout-width', 'fluid');

@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 
 import { NgbToastModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgxLoadingModule } from 'ngx-loading';
 
 import { ToastsContainer } from './login/toasts-container.component';
 
@@ -25,7 +26,8 @@ import { LoginComponent } from './login/login.component';
     FormsModule,
     AccountRoutingModule,
     SigninModule,
-    NgbToastModule
+    NgbToastModule,
+    NgxLoadingModule
   ]
 })
 export class AccountModule { }

@@ -4,6 +4,8 @@ import { User } from '../models/auth.models';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { GlobalComponent } from "../../global-component";
+import { JwtHelperService } from "@auth0/angular-jwt";
+import { TokenStorageService } from './token-storage.service';
 
 const AUTH_API = GlobalComponent.AUTH_API;
 
@@ -17,14 +19,12 @@ const httpOptions = {
  * Auth-service Component
  */
 export class AuthenticationService {
+    private jwtHelper: JwtHelperService = new JwtHelperService();
 
     user!: User;
     currentUserValue: any;
-    private currentUserSubject: BehaviorSubject<User>;
 
-    constructor(private http: HttpClient) { 
-        this.currentUserSubject = new BehaviorSubject<User>(JSON.parse(localStorage.getItem('currentUser')!));
-    }
+    constructor(private http: HttpClient, private tokenService: TokenStorageService) { }
 
     /**
      * Performs the register
@@ -50,14 +50,10 @@ export class AuthenticationService {
      * @param email email of user
      * @param password password of user
      */
-    login(email: string, password: string) {
-        // return getFirebaseBackend()!.loginUser(email, password).then((response: any) => {
-        //     const user = response;
-        //     return user;
-        // });
+    login(nik: string, password: string) {
 
-        return this.http.post(AUTH_API + 'signin', {
-            email,
+        return this.http.post(AUTH_API + GlobalComponent.login, {
+            nik,
             password
           }, httpOptions);
     }
@@ -69,27 +65,19 @@ export class AuthenticationService {
         return getFirebaseBackend()!.getAuthenticatedUser();
     }
 
-    /**
-     * Logout the user
-     */
     logout() {
-        // logout the user
-        // return getFirebaseBackend()!.logout();
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('token');
-        this.currentUserSubject.next(null!);
+        localStorage.removeItem(GlobalComponent.USER_KEY);
+        localStorage.removeItem(GlobalComponent.TOKEN_KEY);
+        localStorage.removeItem(GlobalComponent.REFRESH_TOKEN_KEY);
     }
 
-    /**
-     * Reset password
-     * @param email email
-     */
-    resetPassword(email: string) {
-        return getFirebaseBackend()!.forgetPassword(email).then((response: any) => {
-            const message = response.data;
-            return message;
-        });
+    updateToken(refreshToken: string) {
+        return this.http.post(AUTH_API + GlobalComponent.refreshToken, { refresh_token: refreshToken }, httpOptions)
     }
 
+    isAuthenticated(): boolean {
+        const token = this.tokenService.getToken()
+        return token !== null && !this.jwtHelper.isTokenExpired(token);
+    }
 }
 

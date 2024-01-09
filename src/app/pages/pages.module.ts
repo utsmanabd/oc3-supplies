@@ -8,6 +8,7 @@ import { NgApexchartsModule } from 'ng-apexcharts';
 import { LeafletModule } from '@asymmetrik/ngx-leaflet';
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { SimplebarAngularModule } from 'simplebar-angular';
+import { NgxLoadingModule } from 'ngx-loading';
 
 import { LightboxModule } from 'ngx-lightbox';
 
@@ -20,11 +21,13 @@ import { PagesRoutingModule } from "./pages-routing.module";
 import { SharedModule } from "../shared/shared.module";
 import { DashboardComponent } from './dashboards/dashboard/dashboard.component';
 import { ToastsContainer } from './dashboards/dashboard/toasts-container.component';
+import { BudgetInputComponent } from './budget-input/budget-input.component';
 
 @NgModule({
   declarations: [
     DashboardComponent,
-    ToastsContainer
+    ToastsContainer,
+    BudgetInputComponent
   ],
   imports: [
     CommonModule,
@@ -38,6 +41,7 @@ import { ToastsContainer } from './dashboards/dashboard/toasts-container.compone
     PagesRoutingModule,
     SharedModule,
     LightboxModule,
+    NgxLoadingModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })

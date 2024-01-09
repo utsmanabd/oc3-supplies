@@ -11,5 +11,11 @@ export const MENU: MenuItem[] = [
     label: 'Dashboard',
     icon: 'home',
     link: ''
+  },
+  {
+    id: 3,
+    label: 'Input',
+    icon: 'edit',
+    link: 'input'
   }
 ];
