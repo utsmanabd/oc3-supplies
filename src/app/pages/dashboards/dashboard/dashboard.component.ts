@@ -6,6 +6,7 @@ import { SwiperOptions } from 'swiper';
 
 import { BestSelling, TopSelling, RecentSelling, statData } from './data';
 import { ChartType } from './dashboard.model';
+import { TokenStorageService } from 'src/app/core/services/token-storage.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -30,7 +31,9 @@ export class DashboardComponent implements OnInit {
   // Current Date
   currentDate: any;
 
-  constructor(public toastService: ToastService) {
+  userData: any;
+
+  constructor(public toastService: ToastService, private tokenService: TokenStorageService) {
     var date = new Date();
     var firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
     var lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
@@ -41,6 +44,7 @@ export class DashboardComponent implements OnInit {
     /**
      * BreadCrumb
      */
+    this.userData = this.tokenService.getUser()
     this.breadCrumbItems = [
       { label: 'Dashboards' },
       { label: 'Dashboard', active: true }
