@@ -2,6 +2,12 @@ export const GlobalComponent = {
     // Auth Api
     AUTH_API:"http://localhost:3333/api/auth/",
 
+    // General URL
+    API_URL: "http://localhost:3333/api/master/",
+
+    // AIO Api
+    AIO_API: "https://myapps.aio.co.id/otsuka-api/api/",
+
     // Auth
     login: 'login',
     refreshToken: 'update-token',

@@ -1,0 +1,47 @@
+<ngx-loading [show]="isLoading"></ngx-loading>
+<app-breadcrumbs title="Prodplan" [breadcrumbItems]="breadCrumbItems"></app-breadcrumbs>
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-start">
+            <div class="row row-cols-lg-auto g-1 align-items-center">
+                <h5>Year</h5>
+                <div class="input-group">
+                    <button class="btn btn-primary" (click)="onButtonChangeYear('prev')" type="button"><</button>
+                    <input type="number" (change)="onYearChange($event)" class="form-control form-control-lg" [(ngModel)]="year">
+                    <button class="btn btn-primary" (click)="onButtonChangeYear('next')" type="button">></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body table-responsive">
+        <table class="table table-nowrap" *ngIf="prodplanData && totalProdplan">
+            <thead class="table-light ">
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Month</th>
+                    <th scope="col">Total Daily</th>
+                    <th scope="col">Total Week</th>
+                    <th scope="col">Prodplan</th>
+                    <th scope="col">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let data of prodplanData; let i = index">
+                    <th scope="row">{{ i + 1 }}</th>
+                    <td>{{ common.getMonthName(data.month) }}</td>
+                    <td>{{ data.daily_count }}</td>
+                    <td>{{ data.weekly_count }}</td>
+                    <td>{{ common.getRupiahFormat(data.prodplan) }}</td>
+                    <td><a href="javascript:void(0);" class="fs-15"><i class="ri-edit-2-line"></i></a></td>
+                </tr>
+            </tbody>
+            <tfoot class="table-light">
+                <tr>
+                    <td colspan="4">Total</td>
+                    <td>{{ common.getRupiahFormat(totalProdplan) }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,303 @@
+<p>It works!</p>
+<div class="row">
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="card-title mb-0">Add, Edit & Remove</h4>
+      </div>
+
+      <div class="card-body">
+        <div id="customerList">
+          <div class="row g-4 mb-3">
+            <div class="col-sm-auto">
+              <div class="d-flex gap-1">
+                <button
+                  type="button"
+                  class="btn btn-primary add-btn"
+                  data-bs-toggle="modal"
+                  id="create-btn"
+                  data-bs-target="#showModal"
+                  (click)="openModal(content)"
+                >
+                  <i class="ri-add-line align-bottom me-1"></i> Add
+                </button>
+                <button
+                  class="btn btn-soft-danger"
+                  (click)="deleteMultiple()"
+                >
+                  <i class="ri-delete-bin-2-line"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-sm">
+              <div class="d-flex justify-content-sm-end">
+                <div class="search-box ms-2">
+                  <input
+                    type="text"
+                    class="form-control search"
+                    placeholder="Search..."
+                    [(ngModel)]="service.searchTerm"
+                  />
+                  <i class="ri-search-line search-icon"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive table-card mt-3 mb-1">
+            <table class="table">
+              <thead>
+                <tr class="bg-light text-muted">
+                  <th scope="col" style="width: 50px">
+                    <div class="form-check">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="checkAll"
+                        value="option"
+                        [(ngModel)]="masterSelected"
+                        (change)="checkUncheckAll($event)"
+                      />
+                    </div>
+                  </th>
+                  <th
+                    class="sort"
+                    listsortable="nik"
+                    (listsort)="onSort($event)"
+                  >
+                    NIK
+                  </th>
+                  <th
+                    class="sort"
+                    listsortable="name"
+                    (listsort)="onSort($event)"
+                  >
+                    Name
+                  </th>
+                  <th
+                    class="sort"
+                    listsortable="email"
+                    (listsort)="onSort($event)"
+                  >
+                    Email
+                  </th>
+                  <th
+                    class="sort"
+                    listsortable="role_name"
+                    (listsort)="onSort($event)"
+                  >
+                    Role
+                  </th>
+                  <th class="sort">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let data of users" id="lj_{{ data.user_id }}">
+                  <th scope="row">
+                    <div class="form-check">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        name="checkAll"
+                        value="{{ data.id }}"
+                        [(ngModel)]="data.state"
+                      />
+                    </div>
+                  </th>
+                  <td>
+                    <ngb-highlight
+                      [result]="data.customer_name"
+                      [term]="service.searchTerm"
+                    ></ngb-highlight>
+                  </td>
+                  <td>
+                    <ngb-highlight
+                      [result]="data.email"
+                      [term]="service.searchTerm"
+                    ></ngb-highlight>
+                  </td>
+                  <td>
+                    <ngb-highlight
+                      [result]="data.phone"
+                      [term]="service.searchTerm"
+                    ></ngb-highlight>
+                  </td>
+                  <td>
+                    <ngb-highlight
+                      [result]="data.date"
+                      [term]="service.searchTerm"
+                    ></ngb-highlight>
+                  </td>
+                  <td class="status">
+                    <span
+                      class="badge badge-soft-{{
+                        data.status_color
+                      }} text-uppercase"
+                      >{{ data.status }}</span
+                    >
+                  </td>
+                  <td>
+                    <div class="d-flex gap-2">
+                      <div class="edit">
+                        <button
+                          class="btn btn-sm btn-primary edit-item-btn"
+                          data-bs-toggle="modal"
+                          data-bs-target="#showModal"
+                          (click)="editModal(content, data.user_id)"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                      <div class="remove">
+                        <button
+                          class="btn btn-sm btn-success remove-item-btn"
+                          data-bs-toggle="modal"
+                          data-bs-target="#deleteRecordModal"
+                          (click)="deleteUser(data.user_id)"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="row justify-content-md-between align-items-md-center">
+            <div class="col col-sm-6">
+              <div
+                class="dataTables_info mb-2"
+                id="tickets-table_info"
+                role="status"
+                aria-live="polite"
+              >
+                Showing
+                {{ service.startIndex }} to {{ service.endIndex }} of
+                {{ service.totalRecords }}
+                entries
+              </div>
+            </div>
+
+            <div class="col col-sm-6">
+              <div class="text-sm-right float-end listjs-pagination">
+                <ngb-pagination
+                  [collectionSize]="(total | async)!"
+                  [(page)]="service.page"
+                  [pageSize]="service.pageSize"
+                >
+                </ngb-pagination>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #content role="document" let-modal>
+  <div class="modal-header bg-light p-3">
+    <h5 class="modal-title" id="exampleModalLabel">Add User</h5>
+    <button
+      type="button"
+      class="btn-close"
+      data-bs-dismiss="modal"
+      aria-label="Close"
+      id="close-modal"
+      (click)="modal.dismiss('Cross click')"
+    ></button>
+  </div>
+  <form
+    (ngSubmit)="saveUser()"
+    [formGroup]="userDataForm"
+    class="tablelist-form"
+    autocomplete="off"
+  >
+    <div class="modal-body">
+      <input type="hidden" name="id" value="" formControlName="user_id" />
+
+      <div class="mb-3" id="modal-id" style="display: none">
+        <label for="id-field" class="form-label">ID</label>
+        <input
+          type="text"
+          id="id-field"
+          class="form-control"
+          placeholder="ID"
+          readonly
+        />
+      </div>
+
+      <div class="mb-3">
+        <label for="customername-field" class="form-label">NIK</label>
+        <input
+          type="text"
+          id="customername-field"
+          class="form-control"
+          placeholder="Enter NIK"
+          required
+          formControlName="nik"
+          [ngClass]="{
+            'is-invalid': submitted && f['nik'].errors
+          }"
+        />
+        <div class="invalid-feedback">Please enter an NIK.</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="email-field" class="form-label">Email</label>
+        <input
+          type="email"
+          id="email-field"
+          class="form-control"
+          placeholder="Enter Email"
+          required
+          formControlName="email"
+          [ngClass]="{ 'is-invalid': submitted && f['email'].errors }"
+        />
+        <div class="invalid-feedback">Please enter an email.</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="phone-field" class="form-label">Name</label>
+        <input
+          type="text"
+          id="phone-field"
+          class="form-control"
+          placeholder="Enter Name."
+          required
+          formControlName="name"
+          [ngClass]="{ 'is-invalid': submitted && f['name'].errors }"
+        />
+        <div class="invalid-feedback">Please enter a name.</div>
+      </div>
+    
+      <div class="mb-3">
+        <label for="roleSelect">Role</label>
+        <select formControlName="role_id" id="roleSelect" class="form-select" [ngClass]="{ 'is-invalid': submitted && f['role_id'].errors }">
+            <option class="text-muted" [value]="null">Select role</option>
+            <option *ngFor="let role of rolesData" value="{{ role.role_id }}">{{ role.role_name }}</option>
+        </select>
+        <div *ngIf="submitted && f['role_id'].errors" class="invalid-feedback">
+            <div *ngIf="f['role_id'].errors['required']">Role is required</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div class="hstack gap-2 justify-content-end">
+        <button
+          type="button"
+          class="btn btn-light"
+          data-bs-dismiss="modal"
+          (click)="modal.close('Close click')"
+        >
+          Close
+        </button>
+        <button type="submit" class="btn btn-success" id="add-btn">
+          Add User
+        </button>
+      </div>
+    </div>
+  </form>
+</ng-template>

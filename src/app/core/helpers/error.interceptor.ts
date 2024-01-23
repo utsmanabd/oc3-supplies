@@ -43,6 +43,8 @@ export class ErrorInterceptor implements HttpInterceptor {
                     Authorization: `Bearer ${response.accessToken}`,
                   },
                 });
+                console.log("Token updated successfully");
+                
                 // Retry the request with the new token
                 return next.handle(newRequest);
               } else {
