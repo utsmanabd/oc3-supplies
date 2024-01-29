@@ -111,9 +111,9 @@ export class restApiService {
     return this.requestCachedHttpGet('prodplan', cacheKey)
   }
 
-  getProdplanByYear(year: number) {
-    const cacheKey = "prodplanYear"
-    return this.requestCachedHttpGet(`prodplan/year/${year}`, cacheKey)
+  getProdplanByYearAndLine(year: number, lineId: number) {
+    const cacheKey = "prodplanYearLine"
+    return this.requestCachedHttpGet(`prodplan/year-line/${year}/${lineId}`, cacheKey)
   }
 
   getProdplanGroupYears() {
@@ -127,6 +127,20 @@ export class restApiService {
 
   updateProdplan(id: any, data: any) {
     return this.requestHttpPut(`prodplan`, id, data)
+  }
+
+  // Factory Line API
+  getFactoryLine() {
+    const cacheKey = "factoryLine"
+    return this.requestCachedHttpGet(`line`, cacheKey)
+  }
+
+  insertFactoryLine(data: any) {
+    return this.requestHttpPost(`line`, data)
+  }
+
+  updateFactoryLine(id: any, data: any) {
+    return this.requestHttpPut(`line`, id, data)
   }
 
 }

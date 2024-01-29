@@ -19,6 +19,14 @@ export class CommonService {
     return 'Rp ' + formatResult;
   }
 
+  getFormattedDecimalNumber(input: number): string {
+    const parts = input.toFixed(2).toString().split('.');
+    const formattedIntegerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    const formattedNumber = formattedIntegerPart + ',' + parts[1];
+
+    return formattedNumber;
+}
+
   sumElementFromArray(array: any[], key?: string): number {
     let result: number = 0;
     if (key) {
@@ -35,6 +43,57 @@ export class CommonService {
     ];
     
     return monthNames[month - 1];
+  }
+
+  getTotalWeekInYear(year: number, weeksOfMonth?: number[]): number {
+    let totalWeeks = 0
+    if (weeksOfMonth) {
+      weeksOfMonth.forEach(month => totalWeeks += month)
+    } else {
+      const months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      months.forEach(month => {
+        totalWeeks += this.getTotalWeekInMonth(year, month)
+      })
+    }
+    return totalWeeks;
+  }
+
+  getTotalWeekInMonth(month: number, year: number): number {
+    const totalDays = new Date(year, month, 0).getDate();
+    let totalWeeks = 0;
+
+    if (month === 1 && new Date(year, 0, 1).getDay() >= 2 && new Date(year, 0, 1).getDay() <= 4) {
+      totalWeeks++;
+    }
+    
+    for (let day = 1; day <= totalDays; day++) {
+      const date = new Date(year, month - 1, day);
+      if (date.getDay() === 1) {
+        totalWeeks++;
+      }
+    }
+
+    if (month === 12 && new Date(year, 11, 31).getDay() >= 1 && new Date(year, 11, 31).getDay() <= 3) {
+      totalWeeks--;
+    }
+
+    return totalWeeks;
+  }
+
+  // Array manipulation
+  getIndexById(arr: any[], id: number, idKey: string): number {
+    for (let i = 0; i < arr.length; i++) {
+      if (arr[i][idKey] === id) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  // HTML Doc Manipulation
+  goToTop() {
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
   }
 
   // -- Show alerts
@@ -68,7 +127,7 @@ export class CommonService {
 
   showDeleteWarningAlert(message?: string) {
     return Swal.fire({
-      title: "Are you sure?",
+      title: "Delete Warning",
       text: message ? message : "You won't be able to revert this!",
       icon: "warning",
       showCancelButton: true,

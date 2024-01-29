@@ -1,47 +1,162 @@
 <ngx-loading [show]="isLoading"></ngx-loading>
 <app-breadcrumbs title="Prodplan" [breadcrumbItems]="breadCrumbItems"></app-breadcrumbs>
+<div class="d-flex justify-content-start mb-2">
+    <div class="row row-cols-lg-auto g-0 align-items-center">
+        <label>Factory Line</label>
+        <select [disabled]="isCreateMode" (change)="onFactoryLineChange($event)" class="form-select form-select-sm" [(ngModel)]="lineId">
+            <option *ngFor="let item of lineData" value="{{ item.id }}">{{ item.name }}</option>
+        </select>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-header">
-        <div class="d-flex justify-content-start">
-            <div class="row row-cols-lg-auto g-1 align-items-center">
-                <h5>Year</h5>
+        <div class="d-flex justify-content-center"  *ngIf="lineData">
+            <div class="row row-cols-auto g-0 justify-content-center">
+                <label>Year</label>
                 <div class="input-group">
-                    <button class="btn btn-primary" (click)="onButtonChangeYear('prev')" type="button"><</button>
-                    <input type="number" (change)="onYearChange($event)" class="form-control form-control-lg" [(ngModel)]="year">
-                    <button class="btn btn-primary" (click)="onButtonChangeYear('next')" type="button">></button>
+                    <button [disabled]="isCreateMode" class="btn btn-primary" (click)="onButtonChangeYear('prev')" type="button"><</button>
+                    <input [disabled]="isCreateMode" style="font-size: large; font-weight:600; text-align: center;" type="number" (change)="onYearChange($event)" class="form-control" [(ngModel)]="year">
+                    <button [disabled]="isCreateMode" class="btn btn-primary" (click)="onButtonChangeYear('next')" type="button">></button>
                 </div>
             </div>
         </div>
     </div>
     <div class="card-body table-responsive">
-        <table class="table table-nowrap" *ngIf="prodplanData && totalProdplan">
+        <div *ngIf="!isCreateMode && prodplanData.length > 0;else prodplanNotFound">
+            <table class="table table-nowrap">
+                <thead class="table-light ">
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Month</th>
+                        <!-- <th scope="col">Total Daily</th> -->
+                        <th scope="col">Total Week</th>
+                        <th scope="col">Prodplan</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let data of prodplanData; let i = index">
+                        <th scope="row">{{ i + 1 }}</th>
+                        <td>{{ common.getMonthName(data.month) }}</td>
+                        <!-- <td>{{ data.daily_count }}</td> -->
+                        <td>{{ data.weekly_count }}</td>
+                        <td>{{ common.getFormattedDecimalNumber(data.prodplan) }}</td>
+                        <td><a href="javascript:void(0);" (click)="openEditModal(content, data)" class="fs-15"><i class="ri-edit-2-line"></i></a></td>
+                    </tr>
+                </tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <td colspan="2">Total</td>
+                        <td>{{ totalWeeks }}</td>
+                        <td>{{ common.getFormattedDecimalNumber(totalProdplan) }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+            <div class="d-flex justify-content-center">
+                <button (click)="onDelete()" type="button" class="btn btn-danger">Delete Prodplan</button>
+            </div>
+            
+        </div>
+
+        <table class="table table-nowrap" *ngIf="isCreateMode">
             <thead class="table-light ">
                 <tr>
                     <th scope="col">#</th>
                     <th scope="col">Month</th>
-                    <th scope="col">Total Daily</th>
+                    <!-- <th scope="col">Total Daily</th> -->
                     <th scope="col">Total Week</th>
                     <th scope="col">Prodplan</th>
-                    <th scope="col">Action</th>
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let data of prodplanData; let i = index">
+                <tr *ngFor="let data of temporaryProdplan; let i = index">
                     <th scope="row">{{ i + 1 }}</th>
                     <td>{{ common.getMonthName(data.month) }}</td>
-                    <td>{{ data.daily_count }}</td>
-                    <td>{{ data.weekly_count }}</td>
-                    <td>{{ common.getRupiahFormat(data.prodplan) }}</td>
-                    <td><a href="javascript:void(0);" class="fs-15"><i class="ri-edit-2-line"></i></a></td>
+                    <!-- <td>
+                        <input type="number" class="form-control" [(ngModel)]="data.daily_count">
+                    </td> -->
+                    <td>
+                        <div class="d-flex">
+                            <div class="g-0 align-items-center">
+                                <input type="number" class="form-control" [(ngModel)]="data.weekly_count">
+                            </div>
+                        </div>
+                        
+                    </td>
+                    <td>
+                        <div class="d-flex">
+                            <div class="g-0 align-items-center">
+                                <input (change)="getTotalProdplan(temporaryProdplan)" type="number" class="form-control" [(ngModel)]="data.prodplan">
+                            </div>
+                        </div>
+                    </td>
                 </tr>
             </tbody>
             <tfoot class="table-light">
                 <tr>
-                    <td colspan="4">Total</td>
-                    <td>{{ common.getRupiahFormat(totalProdplan) }}</td>
-                    <td></td>
+                    <td colspan="2">Total</td>
+                    <td>{{ totalWeeks }}</td>
+                    <td>{{ common.getFormattedDecimalNumber(totalProdplan) }}</td>
                 </tr>
             </tfoot>
         </table>
+        <div class="d-flex justify-content-center">
+            <button (click)="onSaveChanges()" *ngIf="isCreateMode" type="button" class="btn btn-success">Save Changes</button>
+        </div>
     </div>
 </div>
+
+<ng-template #prodplanNotFound>
+    <div class="container p-3">
+        <div *ngIf="!isCreateMode">
+            <div class="d-flex justify-content-center mb-1">
+                <h3>Not found!</h3>
+            </div>
+            <div class="d-flex justify-content-center mb-3">
+                <a class="text-muted">Prodplan data on factory line {{ selectedLine }} in {{ _year }} has not been planned yet.</a>
+            </div>
+        </div>
+        <div class="d-flex justify-content-center">
+            <button type="button" class="btn btn-{{ isCreateMode ? 'danger' : 'primary' }}" (click)="onCreateModeChange()">{{ isCreateMode ? 'Cancel' : 'Create Prodplan' }}</button>
+        </div>
+    </div>
+    
+        
+    
+</ng-template>
+
+<ng-template #content let-modal>
+    <div class="modal-header">
+        <h4 class="modal-title" id="modal-basic-title">Edit Prodplan</h4>
+        <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+    </div>
+    <div class="modal-body">
+        <form>
+            <div class="mb-3">
+                <label for="month">Month</label>
+                <input id="month" class="form-control" [value]="modalForm.month" name="month" [disabled]="true"/>
+            </div>
+            <!-- <div class="mb-3">
+                <label for="daily">Total Daily</label>
+                <input name="daily" type="number" id="daily" class="form-control" [(ngModel)]="modalForm.daily">
+            </div> -->
+            <div class="mb-3">
+                <label for="weekly">Total Weekly</label>
+                <div class="input-group">
+                    <input name="weekly" type="number" id="weekly" class="form-control" [(ngModel)]="modalForm.weekly">
+                <button (click)="onWeekAutoSelect()" type="button" class="btn btn-sm btn-primary">Default</button>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="prodplan">Prodplan</label>
+                <input name="prodplan" type="prodplan" id="prodplan" class="form-control" [(ngModel)]="modalForm.prodplan">
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-light" (click)="modal.dismiss()">Cancel</button>
+        <button [disabled]="isLoading" type="button" class="btn btn-success" (click)="onEditChange()">Update</button>
+    </div>
+</ng-template>
