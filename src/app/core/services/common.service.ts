@@ -19,12 +19,41 @@ export class CommonService {
     return 'Rp ' + formatResult;
   }
 
-  getFormattedDecimalNumber(input: number): string {
-    const parts = input.toFixed(2).toString().split('.');
+  formatDecimal(number: number, decimalFixed: number = 2): string {
+    const decimalPart = number.toString().split('.')[1];
+    const decimalLength = decimalPart ? decimalPart.length : 0;
+
+    const formattedNumber = decimalLength <= decimalFixed ? number.toFixed(decimalLength).replace('.', ',') : number.toFixed(decimalFixed).replace('.', ',');
+
+    return formattedNumber;
+}
+
+
+  getFormattedDecimalNumber(input: number, decimalFixed: number = 2): string {
+    const parts = input.toFixed(decimalFixed).toString().split('.');
     const formattedIntegerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     const formattedNumber = formattedIntegerPart + ',' + parts[1];
 
     return formattedNumber;
+  }
+
+  replaceDotWithComma(number: number): string {
+    const formattedNumber = number.toString().replace('.', ',');
+    return formattedNumber;
+}
+
+  formattedNumber(input: number): string {
+    const parts = input.toFixed(2).toString().split('.');
+    const formattedIntegerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return formattedIntegerPart
+  }
+
+  roundNumber(number: number): number {
+    const numberWithoutDecimal = Math.floor(number);
+    const decimal = number - numberWithoutDecimal;
+    const rounding = decimal >= 0.5 ? 1 : 0;
+
+    return numberWithoutDecimal + rounding;
 }
 
   sumElementFromArray(array: any[], key?: string): number {

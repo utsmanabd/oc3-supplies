@@ -15,9 +15,9 @@
             <div class="row row-cols-auto g-0 justify-content-center">
                 <label>Year</label>
                 <div class="input-group">
-                    <button [disabled]="isCreateMode" class="btn btn-primary" (click)="onButtonChangeYear('prev')" type="button"><</button>
+                    <button [disabled]="isCreateMode" class="btn btn-primary" (click)="onButtonChangeYear('prev')" type="button"><i class="ri ri-arrow-left-line"></i></button>
                     <input [disabled]="isCreateMode" style="font-size: large; font-weight:600; text-align: center;" type="number" (change)="onYearChange($event)" class="form-control" [(ngModel)]="year">
-                    <button [disabled]="isCreateMode" class="btn btn-primary" (click)="onButtonChangeYear('next')" type="button">></button>
+                    <button [disabled]="isCreateMode" class="btn btn-primary" (click)="onButtonChangeYear('next')" type="button"><i class="ri ri-arrow-right-line"></i></button>
                 </div>
             </div>
         </div>
@@ -41,7 +41,7 @@
                         <td>{{ common.getMonthName(data.month) }}</td>
                         <!-- <td>{{ data.daily_count }}</td> -->
                         <td>{{ data.weekly_count }}</td>
-                        <td>{{ common.getFormattedDecimalNumber(data.prodplan) }}</td>
+                        <td>{{ common.formatDecimal(data.prodplan) }}</td>
                         <td><a href="javascript:void(0);" (click)="openEditModal(content, data)" class="fs-15"><i class="ri-edit-2-line"></i></a></td>
                     </tr>
                 </tbody>
@@ -49,7 +49,7 @@
                     <tr>
                         <td colspan="2">Total</td>
                         <td>{{ totalWeeks }}</td>
-                        <td>{{ common.getFormattedDecimalNumber(totalProdplan) }}</td>
+                        <td>{{ common.formatDecimal(totalProdplan) }}</td>
                         <td></td>
                     </tr>
                 </tfoot>
@@ -98,7 +98,7 @@
                 <tr>
                     <td colspan="2">Total</td>
                     <td>{{ totalWeeks }}</td>
-                    <td>{{ common.getFormattedDecimalNumber(totalProdplan) }}</td>
+                    <td>{{ common.formatDecimal(totalProdplan) }}</td>
                 </tr>
             </tfoot>
         </table>

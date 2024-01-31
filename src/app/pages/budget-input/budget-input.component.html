@@ -1,1 +1,204 @@
-<p>budget-input works!</p>
+<ngx-loading [show]="isLoading"></ngx-loading>
+<app-breadcrumbs
+  title="Supplies"
+  [breadcrumbItems]="breadCrumbItems"
+></app-breadcrumbs>
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <div class="me-2">
+    <label>Factory Line</label>
+    <select *ngIf="lineData" (change)="onFactoryLineChange($event)" class="form-select form-select-sm" [(ngModel)]="selectedLine.lineId">
+      <option *ngFor="let item of lineData" value="{{ item.id }}"> {{ item.name }} </option>
+    </select>
+  </div>
+  <div>
+    <label>Year</label>
+    <div class="input-group">
+      <button class="btn btn-sm btn-primary" (click)="onButtonChangeYear('prev')" type="button">
+        <i class="ri ri-arrow-left-line"></i>
+      </button>
+      <input type="number" (change)="onYearChange($event)" class="form-control" [(ngModel)]="year" />
+      <button class="btn btn-sm btn-primary" (click)="onButtonChangeYear('next')" type="button">
+        <i class="ri ri-arrow-right-line"></i>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header">
+    <div class="row g-4">
+        <div class="col-sm-auto">
+          <div class="d-flex gap-1">
+            <button (click)="openUpdateModal(updateModal)" type="button" class="btn btn-success add-btn" id="create-btn">
+              <i class="ri-add-line align-bottom me-1"></i> Add Supplies
+            </button>
+            <button class="btn btn-soft-danger"><i class="ri-delete-bin-2-line"></i></button>
+          </div>
+        </div>
+        <div class="col-sm">
+          <div class="d-flex justify-content-sm-end">
+            <div class="search-box ms-2">
+              <input type="text" class="form-control search" placeholder="Search..." />
+              <i class="ri-search-line search-icon"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+  </div>
+  <div class="card-body table-responsive">
+    <div *ngIf="suppliesData.length > 0;else budgetingNotFound">
+        <table class="table table-nowrap">
+            <thead class="table-light">
+              <tr>
+                <th scope="col">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="cardtableCheck">
+                        <label class="form-check-label" for="cardtableCheck"></label>
+                    </div>
+                </th>
+                <th *ngFor="let col of tableColumns" scope="col">{{ col }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let data of suppliesData; let i = index">
+                <td>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="check_{{data.budget_id}}">
+                        <label class="form-check-label" for="check_{{data.budget_id}}"></label>
+                    </div>
+                </td>
+                <td>
+                    <div class="fs-6">
+                        <a class="text-reset">{{ data.section }}</a>
+                    </div>
+                    <span class="fs-7 text-muted">{{ data.cost_center }}</span>
+                </td>
+                <td>{{ data.material_code }}</td>
+                <td>{{ data.material_desc }}</td>
+                <td>
+                    <div class="fs-6">
+                        <a class="text-reset">{{ data.calculation_by }}</a>
+                    </div>
+                    <span *ngIf="data.calculation_by == 'Prodplan'" class="fs-7 text-muted">(Per 1000 Btl)</span>
+                </td>
+                <td>{{ data.uom }}</td>
+                <td>{{ common.getRupiahFormat(data.average_price) }}</td>
+                <td>{{ common.replaceDotWithComma(data.bom) }}</td>
+                <td>{{ common.formatDecimal(common.sumElementFromArray(data.budgeting_data, "quantity")) }}</td>
+                <td>{{ common.getRupiahFormat(common.sumElementFromArray(data.budgeting_data, "price")) }}</td>
+                <td>
+                    <div class="dropdown" ngbDropdown>
+                        <a href="javascript:void(0);" class="arrow-none" role="button"
+                            id="dropdownMenuLink4" data-bs-toggle="dropdown" aria-expanded="false"
+                            ngbDropdownToggle>
+                            <i class="ri-more-2-fill"></i>
+                        </a>
+
+                        <ul class="dropdown-menu dropdown-menu-end"
+                            aria-labelledby="dropdownMenuLink4" ngbDropdownMenu>
+                            <li><a class="dropdown-item" (click)="openDetailModal(detailModal, data)" href="javascript:void(0);">Detail</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);">Edit</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);">Delete</a></li>
+                        </ul>
+                    </div>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot class="table-light">
+              <tr>
+                <td colspan="6">Total</td>
+                <td>{{ common.getRupiahFormat(common.sumElementFromArray(suppliesData, "average_price")) }}</td>
+                <td></td>
+                <td>{{ common.formatDecimal(totalQuantity) }}</td>
+                <td>{{ common.getRupiahFormat(totalPrice) }}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+    </div>
+    
+  </div>
+</div>
+
+<ng-template #detailModal let-modal>
+	<div class="modal-header">
+		<h4 class="modal-title">Detail #{{ detailModalForm.concatenate }}</h4>
+		<button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
+	</div>
+	<div class="modal-body">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="p-2">
+                    <div class="row g-3">
+                        <div class="col-md-4 col-sm-6" *ngFor="let item of detailModalForm.budgetingData">
+                            <p class="mb-2 text-uppercase fw-semibold">{{ common.getMonthName(item.month) }}</p>
+                            <div class="d-flex justify-content-between">
+                                <div class="fs-12 text-muted">Quantity </div>
+                                <div class="fs-6">{{ common.formatDecimal(item.quantity) }}</div>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <div class="fs-12 text-muted">Price </div>
+                                <div class="fs-6">{{ common.getRupiahFormat(item.price) }}</div>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <div class="fs-12 text-muted">Prodplan </div>
+                                <div class="fs-6">{{ common.formatDecimal(item.prodplan) }}</div>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <div class="fs-12 text-muted">Total Week </div>
+                                <div class="fs-6">{{ item.total_week }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+	</div>
+	<div class="modal-footer">
+		<button type="button" class="btn btn-secondary" (click)="modal.close('Close click')">Close</button>
+	</div>
+</ng-template>
+
+<ng-template #updateModal let-modal>
+	<div class="modal-header">
+		<h4 class="modal-title">Add New Supply Budgeting</h4>
+		<button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
+	</div>
+	<div class="modal-body">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="p-2">
+                    <div class="row g-3">
+                        <div class="col-md-4 col-sm-6">
+                            <label for="material">Material</label>
+                            <input type="text" class="form-control" id="material" name="material">
+                        </div>
+                        <div class="col-md-4 col-sm-6">
+                            <label for="calculationMethod">Calculation By</label>
+                            <select (change)="onCalculationBudgetChange($event)" id="calculationMethod" class="form-select" [(ngModel)]="selectedCalculationBy.id">
+                              <option *ngFor="let item of calculationData" [value]="item.id">{{ item.name }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 col-sm-6">
+                            <label for="bom">BOM</label>
+                            <input type="text" class="form-control" id="bom" name="bom">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+	</div>
+	<div class="modal-footer">
+		<button type="button" class="btn btn-secondary" (click)="modal.close('Close click')">Close</button>
+	</div>
+</ng-template>
+
+<ng-template #budgetingNotFound>
+    <div class="container p-3">
+        <div class="d-flex justify-content-center mb-1">
+            <h3>Not found!</h3>
+        </div>
+        <div class="d-flex justify-content-center mb-3">
+            <a class="text-muted">Budgeting data on factory line {{ selectedLine.lineName }} in {{ _year }} has not been planned yet.</a>
+        </div>
+    </div>
+</ng-template>

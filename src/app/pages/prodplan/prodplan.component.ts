@@ -105,9 +105,9 @@ export class ProdplanComponent {
           resolve(true)
         },
         error: (err) => {
-          reject(err)
           this.isLoading = false;
           this.common.showServerErrorAlert(Const.ERR_GET_MSG("Prodplan"), err)
+          reject(err)
         },
         complete: () => {
           this.getTotalProdplan(this.prodplanData)

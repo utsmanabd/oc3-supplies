@@ -143,4 +143,31 @@ export class restApiService {
     return this.requestHttpPut(`line`, id, data)
   }
 
+  // Supplies Budget API
+  getSuppliesByYearAndLine(year: number, lineId: number) {
+    const cacheKey = "suppliesYearLine"
+    return this.requestCachedHttpGet(`supplies/year-line/${year}/${lineId}`, cacheKey)
+  }
+
+  insertSupplies(data: any) {
+    return this.requestHttpPost(`supplies`, data)
+  }
+
+  updateSupplies(id: any, data: any) {
+    return this.requestHttpPut(`supplies`, id, data)
+  }
+
+  // Calculation Budget
+  getCalculationBudget() {
+    const cacheKey = "calculationBudget"
+    return this.requestCachedHttpGet(`calculation`, cacheKey)
+  }
+
+  insertCalculationBudget(data: any) {
+    return this.requestHttpPost(`calculation`, data)
+  }
+
+  updateCalculationBudget(id: any, data: any) {
+    return this.requestHttpPut(`calculation`, id, data)
+  }
 }
