@@ -132,7 +132,8 @@ export class CommonService {
       text: message ? message : 'Great job!',
       icon: 'success',
       showDenyButton: cancelMessage ? true : false,
-      denyButtonColor: 'rgb(240, 101, 72)',
+      denyButtonColor: 'rgb(243, 78, 78)',
+      confirmButtonColor: "rgb(3, 142, 220)",
       confirmButtonText: 'OK',
       denyButtonText: cancelMessage ? cancelMessage : 'Cancel'
     })
@@ -150,18 +151,21 @@ export class CommonService {
       text: message ? message : 'Something went wrong',
       icon: 'error',
       showCloseButton: true,
+      confirmButtonColor: "rgb(3, 142, 220)",
       confirmButtonText: confirmButton ? confirmButton : 'Close'
     })
   }
 
-  showDeleteWarningAlert(message?: string) {
+  showDeleteWarningAlert(message?: string, title?: string, confirmButton?: string, showCancelButton: boolean = true) {
     return Swal.fire({
-      title: "Delete Warning",
+      title: title ? title : "Delete Warning",
       text: message ? message : "You won't be able to revert this!",
       icon: "warning",
-      showCancelButton: true,
-      cancelButtonColor: "rgb(243, 78, 78)",
-      confirmButtonText: "Delete",
+      showCancelButton: showCancelButton,
+      showCloseButton: !showCancelButton,
+      cancelButtonColor: 'rgb(243, 78, 78)',
+      confirmButtonColor: "rgb(3, 142, 220)",
+      confirmButtonText: confirmButton ? confirmButton : "Delete",
     })
   }
 }

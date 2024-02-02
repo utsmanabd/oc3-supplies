@@ -5,6 +5,7 @@ import { restApiService } from 'src/app/core/services/rest-api.service';
 import { Const } from 'src/app/core/static/const';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-prodplan',
@@ -29,7 +30,7 @@ export class ProdplanComponent {
   prodplanData: any[] = []
   lineData: any[] = []
   selectedLine: string = ''
-  totalProdplan!: number
+  totalProdplan: number = 0
   totalWeeks!: number
 
   temporaryProdplan: any[] = []
@@ -52,7 +53,8 @@ export class ProdplanComponent {
     private apiService: restApiService,
     public common: CommonService,
     private breakpointObserver: BreakpointObserver,
-    private modalService: NgbModal
+    private modalService: NgbModal,
+    private route: ActivatedRoute
   ) {
     this.year = new Date().getFullYear()
     this._year = this.year
@@ -64,14 +66,16 @@ export class ProdplanComponent {
       this.isSmallScreen = result.breakpoints[Breakpoints.XSmall];
     })
 
-    this.clickSubject.pipe(debounceTime(350)).subscribe((value: any) => {
+    this.clickSubject.pipe(debounceTime(350)).subscribe(async (value: any) => {
       if (isNaN(value)) {
         this._year = this.year
       } else {
         this.selectedLine = this.lineData[value].name
       }
       this.apiService.resetCachedData("prodplanYearLine")
-      this.getProdplanByYearAndLine(this.year, this.lineId)
+      await this.getProdplanByYearAndLine(this.year, this.lineId).then((result) => {
+        if (result) this.getTotalWeeks(this.prodplanData)
+      })
     })
   }
 
@@ -84,7 +88,23 @@ export class ProdplanComponent {
   }
 
   async ngOnInit() {
-    await this.getFactoryLine()
+    await this.getFactoryLine().then(result => {
+      if (result && this.lineData.length > 0) {
+        this.lineIdBefore = this.lineData[0].id
+        this.route.queryParams.subscribe((params: any) => {
+          if (params.lineId && params.year) {
+            this.lineId = +params.lineId
+            this.year = +params.year
+            const index = this.common.getIndexById(this.lineData, this.lineId, "id")
+            this.selectedLine = this.lineData[index].name
+            this.onCreateModeChange()
+          } else {
+            this.selectedLine = this.lineData[0].name
+            this.lineId = this.lineData[0].id
+          }
+        })
+      }
+    })
     await this.getProdplanByYearAndLine(this.year, this.lineId)
   }
 
@@ -98,11 +118,6 @@ export class ProdplanComponent {
           this.prodplanData.forEach(item => {
             item.prodplan = +item.prodplan;
           })
-          console.log("lineId: ", this.lineId);
-          console.log("year: ", this.year);
-          console.log(this.prodplanData);
-          
-          resolve(true)
         },
         error: (err) => {
           this.isLoading = false;
@@ -111,7 +126,7 @@ export class ProdplanComponent {
         },
         complete: () => {
           this.getTotalProdplan(this.prodplanData)
-          this.getTotalWeeks(this.prodplanData)
+          resolve(true)
         }
       })
     })
@@ -132,12 +147,7 @@ export class ProdplanComponent {
         next: (res: any) => {
           this.isLoading = false
           this.lineData = res.data
-          if (this.lineData.length > 0) {
-            this.selectedLine = this.lineData[0].name
-            this.lineId = this.lineData[0].id
-            this.lineIdBefore = this.lineData[0].id
-            resolve(true)
-          } else reject(false)
+          resolve(true)
         },
         error: (err) => {
           this.isLoading = false
@@ -213,18 +223,15 @@ export class ProdplanComponent {
           month: monthNumber,
           prodplan: 0,
           daily_count: 21,
-          weekly_count: this.common.getTotalWeekInMonth(monthNumber, this.year)
+          weekly_count: this.common.getTotalWeekInMonth(monthNumber, yearSelected)
         })
       })
       this.temporaryProdplan = temporaryData
       this.getTotalWeeks(this.temporaryProdplan)
-      console.log(this.temporaryProdplan);
     } else {
       this.isCreateMode = false
       this.temporaryProdplan = []
       this.totalProdplan = 0
-      console.log(this.temporaryProdplan);
-      
     }
   }
 

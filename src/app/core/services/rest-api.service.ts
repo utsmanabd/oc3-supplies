@@ -19,7 +19,6 @@ export class restApiService {
   resetCachedData(cachedData?:string) {
     if (cachedData) {
       const index = this.cache.findIndex((item) => item[cachedData])
-      console.log(index);
       if (index >= 0) {
         this.cache.splice(index, 1)
       } else throwError(`${cachedData} not found!`)
@@ -74,18 +73,18 @@ export class restApiService {
   }
 
   // Employee / Users API
-  getEmployeeData(searchQuery: string) {
-    if (searchQuery === "") {
+  getEmployeeData(term: string) {
+    if (term === "") {
       return of([]);
     }
 
-    return this.http.post(GlobalComponent.AIO_API + "employee", { search: searchQuery }, httpOptions)
+    return this.http.post(GlobalComponent.AIO_API + "employee", { search: term }, httpOptions)
       .pipe(
         map((response: any) =>
           Array.isArray(response.data)
             ? response.data
                 .filter((data: any) =>
-                  new RegExp(searchQuery, "mi").test(
+                  new RegExp(term, "mi").test(
                     `${data.nik} - ${data.employee_name}`
                   )
                 )
@@ -169,5 +168,22 @@ export class restApiService {
 
   updateCalculationBudget(id: any, data: any) {
     return this.requestHttpPut(`calculation`, id, data)
+  }
+
+  // Material API
+  searchMaterial(term: string) {
+    if (term === '') {
+      return of([])
+    }
+    return this.http.post(GlobalComponent.API_URL + "material/search", { search: term }, httpOptions)
+      .pipe(
+        map((res: any) => Array.isArray(res.data) 
+          ? res.data
+              .filter((data: any) => new RegExp(term, 'mi')
+                .test(`${data.material_code} - ${data.material_desc}`))
+              .slice(0, 10)
+          : []
+        )
+      )
   }
 }
