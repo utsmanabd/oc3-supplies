@@ -168,7 +168,23 @@
             <div class="col-lg-12">
                 <div class="p-2">
                     <div class="row g-3">
-                        <div class="col-md-4 col-sm-6">
+                        <div class="col-md-3 col-sm-6">
+                          <label for="typeahead-http-costctr">Section / Cost Center</label>
+                          <input
+                              id="typeahead-http-costctr"
+                              type="text"
+                              class="form-control"
+                              (ngModelChange)="onCostCenterFormSearch()"
+                              [(ngModel)]="costCenter"
+                              [ngbTypeahead]="searchCostCenter"
+                              [editable]="false"
+                              [inputFormatter]="costCenterFormatter"
+                              [resultFormatter]="costCenterFormatter"
+                              placeholder="Search for cost center" />
+                          <small *ngIf="costCenterSearching" class="form-text text-muted">Searching...</small>
+                          <!-- <h4>{{costCenter | json}}</h4> -->
+                        </div>
+                        <div class="col-md-3 col-sm-6">
                           <label for="typeahead-http">Material</label>
                           <input
                               id="typeahead-http"
@@ -178,38 +194,40 @@
                               [(ngModel)]="material"
                               [ngbTypeahead]="searchMaterial"
                               [editable]="false"
-                              [inputFormatter]="formatter"
-                              [resultFormatter]="formatter"
+                              [inputFormatter]="materialFormatter"
+                              [resultFormatter]="materialFormatter"
                               placeholder="Search for material" />
-                          <small *ngIf="searching" class="form-text text-muted">Searching...</small>
+                          <small *ngIf="materialSearching" class="form-text text-muted">Searching...</small>
                           <small *ngIf="searchLength" class="form-text text-muted">Type at least {{ 3 - searchLength }} more character</small>
                           <!-- <h4>{{material | json}}</h4> -->
                         </div>
-                        <div class="col-md-4 col-sm-6">
+                        <div class="col-md-3 col-sm-6">
                             <label for="calculationMethod">Calculation By</label>
                             <select (change)="onCalculationBudgetChange($event)" id="calculationMethod" class="form-select" [(ngModel)]="selectedCalculationBy.id">
                               <option *ngFor="let item of calculationData" [value]="item.id">{{ item.name }}</option>
                             </select>
                         </div>
-                        <div class="col-md-4 col-sm-6">
+                        <div class="col-md-3 col-sm-6">
                             <label for="bom">BOM</label>
                             <input [(ngModel)]="bom" placeholder="Input BOM" type="number" class="form-control" id="bom" name="bom">
                         </div>
-                        <div *ngIf="isNotHaveAveragePrice" class="col-md-4 col-sm-6">
+                        <div *ngIf="isNotHaveAveragePrice" class="col-md-3 col-sm-6">
                           <label for="avgPrice">Average Price</label>
                           <input [(ngModel)]="avgPrice" placeholder="Input average price" type="number" class="form-control" id="avgPrice" name="avgPrice">
                         </div>
                         <div class="mt-2">
-                          <small *ngIf="isNotHaveAveragePrice" class="form-text text-danger">*The selected material does not have an average price. Please fill in the average price column first!</small>
+                          <small *ngIf="isNotHaveAveragePrice && !avgPrice" class="form-text text-danger">*The selected material does not have an average price. Please fill in the average price column first!</small>
                           <small *ngIf="!isNotHaveAveragePrice && avgPrice" class="form-text text-info">Average price: {{ common.getRupiahFormat(avgPrice) }}</small>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
 	</div>
 	<div class="modal-footer">
-		<button type="button" class="btn btn-success" (click)="modal.close('Close click')">Save</button>
+    <small *ngIf="isFormInvalid" class="form-text text-danger">Please fill all the field above!</small>
+		<button type="button" class="btn btn-success" (click)="onAddSupply()">Save</button>
 	</div>
 </ng-template>
 

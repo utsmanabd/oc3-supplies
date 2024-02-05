@@ -47,33 +47,38 @@ export class BudgetInputComponent {
   bom!: number | null
   material: any
 
-  searching = false;
-  searchFailed = false;
+  costCenter: any
+
+  materialSearching = false;
+  costCenterSearching = false;
+
   searchLength: number | null = null;
   isNotHaveAveragePrice = false
 
-  formatter = (mat: Material) => mat.material_code ? `${mat.material_code} - ${mat.material_desc}` : ""
-  searchMaterial: OperatorFunction<string, any[]> = (text$: Observable<any>) =>
-    text$.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      tap(() => (this.searching = true)),
-      switchMap((term: string) => {
-        if (term.length >= 3) {
-          this.searchLength = null
-          return this.apiService.searchMaterial(term).pipe(
-            tap((data) => {
-              this.searchFailed = false
-            })
-          )
-        } else {
-          this.searchLength = term.length
-          return of([])
-        }
-      }),
-      tap(() => this.searching = false)
-    )
+  materialFormatter = (mat: Material) => mat.material_code ? `${mat.material_code} - ${mat.material_desc}` : ``
+  costCenterFormatter = (item: any) => item.cost_ctr ? `${item.section} (${item.cost_ctr})` : ``
 
+  searchMaterial: OperatorFunction<string, any[]> = (text$: Observable<any>) =>
+    text$.pipe(debounceTime(300), distinctUntilChanged(), tap(() => (this.materialSearching = true)), switchMap((term: string) => {
+      if (term.length >= 3) {
+        this.searchLength = null
+        return this.apiService.searchMaterial(term)
+      } else {
+        this.searchLength = term.length
+        return of([])
+      }
+    }),
+    tap(() => this.materialSearching = false)
+  )
+  
+  searchCostCenter: OperatorFunction<string, any[]> = (text$: Observable<any>) =>
+    text$.pipe(debounceTime(300), distinctUntilChanged(), tap(() => (this.costCenterSearching = true)), switchMap((term: string) => {
+      return this.apiService.searchCostCenter(term)
+    }),
+    tap(() => this.costCenterSearching = false)
+  )
+
+  isFormInvalid = false;
   isLoading: boolean = false;
   breadCrumbItems!: Array<{}>;
 
@@ -141,6 +146,8 @@ export class BudgetInputComponent {
           reject(err)
         },
         complete: () => {
+          console.log(this.suppliesData);
+          
           this.getTotalQuantityAndPrice(this.suppliesData)
           resolve(true)
         }
@@ -229,6 +236,19 @@ export class BudgetInputComponent {
     })
   }
 
+  updateSupplyBudget(id: any, data: any) {
+    this.isLoading = true
+    this.apiService.updateSupplies(id, data).subscribe({
+      next: (res: any) => {
+        this.isLoading = false
+      },
+      error: (err) => {
+        this.isLoading = false
+        this.common.showErrorAlert(Const.ERR_UPDATE_MSG("Supply"), err)
+      }
+    })
+  }
+
   getTotalQuantityAndPrice(suppliesData: any[]) {
     let totalQuantity = 0
     let totalPrice = 0
@@ -259,6 +279,8 @@ export class BudgetInputComponent {
   onMaterialFormSearch(event: any) {
     setTimeout(() => {
       if (this.material) {
+        console.log(this.material);
+        
         if (!this.material.average_price) {
           this.isNotHaveAveragePrice = true
           this.avgPrice = null
@@ -266,6 +288,14 @@ export class BudgetInputComponent {
           this.isNotHaveAveragePrice = false
           this.avgPrice = +this.material.average_price
         }
+      }
+    }, 50)
+  }
+
+  onCostCenterFormSearch() {
+    setTimeout(() => {
+      if (this.costCenter) {
+        console.log(this.costCenter);
       }
     }, 50)
   }
@@ -328,6 +358,111 @@ export class BudgetInputComponent {
     this.bom = null;
     this.avgPrice = null;
     this.isNotHaveAveragePrice = false;
+    this.isFormInvalid = false;
+  }
+
+  onAddSupply() {
+    if (this.material && this.bom && this.avgPrice && this.prodplanData && this.costCenter) {
+      this.isFormInvalid = false
+      if (!this.material.average_price) {
+        this.updateMaterial(this.material.id, { average_price: this.avgPrice }).then(success => {
+          console.log(`average price has been added on ${this.material.material_code}`);
+          if (success) this.saveChanges()
+        })
+      } else {
+        this.saveChanges()
+      }
+    } else {
+      this.isFormInvalid = true
+    }
+  }
+
+  saveChanges() {
+    const data: any[] = []
+    const budgetId = `${this.year}-${this.selectedLine.lineId}-${this.costCenter.id}-${this.material.id}`
+    const bom = this.bom ? this.bom! : 0
+
+    this.prodplanData.forEach(item => {
+      let quantity = 0
+      let price = 0
+
+      if (this.selectedCalculationBy.id == 1) {
+        // Prodplan (Per 1000 btl) Calculation
+        quantity = item.prodplan / 1000 * bom
+      } else if (this.selectedCalculationBy.id == 2) {
+        // Daily Calculation
+        quantity = item.daily_count * bom
+      } else if (this.selectedCalculationBy.id == 3) {
+        // Weekly Calculation
+        quantity = item.weekly_count * bom
+      } else if (this.selectedCalculationBy.id == 4) {
+        // Monthly Calculation
+        quantity = item.monthly_count * bom
+      }
+
+      price = quantity * this.avgPrice!
+
+      data.push({
+        budget_id: budgetId,
+        material_id: this.material.id,
+        cost_ctr_id: this.costCenter.id,
+        calc_budget_id: this.selectedCalculationBy.id,
+        prodplan_id: item.id,
+        bom: bom,
+        quantity: quantity,
+        price: price
+      })
+    })
+    console.log(data);
+
+    this.apiService.isBudgetIdAvailable(budgetId).subscribe({
+      next: (res: any) => {
+        if (!res.is_available) {
+          this.common.showErrorAlert(`Supply is already exist on ${this.costCenter.section} - ${this.costCenter.cost_ctr}!`, "Already Exist")
+        } else {
+          this.insertSupplyBudget(data)
+        }
+      },
+      error: (err) => this.common.showErrorAlert(Const.ERR_GET_MSG("Budget Id"), err)
+    })
+  }
+
+  async updateMaterial(id: any, data: any) {
+    return new Promise((resolve, reject) => {
+      this.isLoading = true;
+      this.apiService.updateMaterial(id, data).subscribe({
+        next: (res: any) => {
+          this.isLoading = false
+          resolve(true)
+        },
+        error: (err) => {
+          this.isLoading = false
+          this.common.showErrorAlert(Const.ERR_UPDATE_MSG("Material"), err)
+          reject(err)
+        }
+      })
+    })
+    
+  }
+
+  insertSupplyBudget(data: any) {
+    this.isLoading = true
+    this.apiService.insertSupplies(data).subscribe({
+      next: (res: any) => {
+        this.clickSubject.next("Insert")
+        this.isLoading = false
+        this.modalService.dismissAll()
+        this.common.showSuccessAlert("Supply updated successfully!").then((result) => {
+          if (result.value) {
+            
+          }
+        })
+      },
+      error: (err) => {
+        this.isLoading = false
+        this.common.showErrorAlert(Const.ERR_INSERT_MSG("Supply"), err)
+      }
+    })
   }
   
 }

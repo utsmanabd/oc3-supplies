@@ -128,6 +128,10 @@ export class restApiService {
     return this.requestHttpPut(`prodplan`, id, data)
   }
 
+  isProdplanAvailable(year: number, lineId: number) {
+    return this.requestHttpGet(`prodplan/year-line/is-available/${year}/${lineId}`)
+  }
+
   // Factory Line API
   getFactoryLine() {
     const cacheKey = "factoryLine"
@@ -156,6 +160,10 @@ export class restApiService {
     return this.requestHttpPut(`supplies`, id, data)
   }
 
+  isBudgetIdAvailable(budgetId: string) {
+    return this.requestHttpGet(`supplies/budget-id/is-available/${budgetId}`)
+  }
+
   // Calculation Budget
   getCalculationBudget() {
     const cacheKey = "calculationBudget"
@@ -181,6 +189,31 @@ export class restApiService {
           ? res.data
               .filter((data: any) => new RegExp(term, 'mi')
                 .test(`${data.material_code} - ${data.material_desc}`))
+              .slice(0, 10)
+          : []
+        )
+      )
+  }
+
+  insertMaterial(data: any) {
+    return this.requestHttpPost(`material`, data)
+  }
+
+  updateMaterial(id: any, data: any) {
+    return this.requestHttpPut(`material`, id, data)
+  }
+
+  // Line Cost Center
+  searchCostCenter(term: string) {
+    if (term === '') {
+      return of([])
+    }
+    return this.http.post(GlobalComponent.API_URL + "costctr/search", { search: term }, httpOptions)
+      .pipe(
+        map((res: any) => Array.isArray(res.data) 
+          ? res.data
+              .filter((data: any) => new RegExp(term, 'mi')
+                .test(`${data.section} (${data.cost_ctr})`))
               .slice(0, 10)
           : []
         )
