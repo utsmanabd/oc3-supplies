@@ -325,22 +325,35 @@ export class BudgetInputComponent {
     this.modalService.open(content, { size: 'lg' })
   }
 
+  budgetId: string = ''
   openUpdateModal(content: TemplateRef<any>, data?: any) {
-    if (data) {
-
-    }
-
     if (this.prodplanData.length !== 12) {
       this.showProdplanNotFoundAlert()
     } else {
+      if (data) {
+        this.costCenter = { id: data.cost_ctr_id, section: data.section, cost_ctr: data.cost_center }
+        this.material = { id: data.material_id, material_code: data.material_code, material_desc: data.material_desc, average_price: data.average_price }
+        this.bom = data.bom
+        this.selectedCalculationBy.id = data.calculation_id
+        this.selectedCalculationBy.name = data.calculation_by
+        this.avgPrice = data.average_price
+        this.budgetId = data.budget_id
+      }
+
       this.modalService.open(content, { size: 'xl', centered: true }).result.then(
         (result) => this.resetModalValue(),
-        (reason) => this.resetModalValue()
+        (reason) => {
+          if (reason == 'Edit') {
+            this.costCenter = undefined;
+          }
+          this.resetModalValue()
+        }
       )
     }
   }
 
   resetModalValue() {
+    this.budgetId = ''
     this.isLoading = false;
     this.material = null;
     this.bom = null;
@@ -355,17 +368,17 @@ export class BudgetInputComponent {
       if (!this.material.average_price) {
         this.updateMaterial(this.material.id, { average_price: this.avgPrice }).then(success => {
           console.log(`average price has been added on ${this.material.material_code}`);
-          if (success) this.saveChanges()
+          if (success) this.budgetId ? this.saveChanges(true) : this.saveChanges()
         })
       } else {
-        this.saveChanges()
+        this.budgetId ? this.saveChanges(true) : this.saveChanges()
       }
     } else {
       this.isFormInvalid = true
     }
   }
 
-  saveChanges() {
+  async saveChanges(isEditMode: boolean = false) {
     const data: any[] = []
     const budgetId = `${this.year}-${this.selectedLine.lineId}-${this.costCenter.id}-${this.material.id}`
     const bom = this.bom ? this.bom! : 0
@@ -403,16 +416,34 @@ export class BudgetInputComponent {
     })
     console.log(data);
 
-    this.apiService.isBudgetIdAvailable(budgetId).subscribe({
-      next: (res: any) => {
-        if (!res.is_available) {
-          this.common.showErrorAlert(`Supply is already exist on ${this.costCenter.section} - ${this.costCenter.cost_ctr}!`, "Already Exist")
-        } else {
-          this.insertSupplyBudget(data)
+    if (isEditMode) {
+      data.forEach(item => {
+        delete item.budget_id
+      })
+      this.isLoading = true
+      this.apiService.updateSuppliesByBudgetAndProdplanId(this.budgetId, data).subscribe({
+        next: (res: any) => {
+          this.isLoading = false
+          this.clickSubject.next("Update")
+          this.modalService.dismissAll("Edit")
+        },
+        error: (err) => {
+          this.isLoading = false
+          this.common.showErrorAlert(Const.ERR_UPDATE_MSG("Supplies"), err)
         }
-      },
-      error: (err) => this.common.showErrorAlert(Const.ERR_GET_MSG("Budget Id"), err)
-    })
+      })
+    } else {
+      this.apiService.isBudgetIdAvailable(budgetId).subscribe({
+        next: async (res: any) => {
+          if (!res.is_available) {
+            this.common.showErrorAlert(`Supply is already exist on ${this.costCenter.section} - ${this.costCenter.cost_ctr}!`, "Already Exist")
+          } else {
+            this.insertSupplyBudget(data)
+          }
+        },
+        error: (err) => this.common.showErrorAlert(Const.ERR_GET_MSG("Budget Id"), err)
+      })
+    }
   }
 
   onDeleteSupplyBudget(data?: any) {
@@ -437,7 +468,6 @@ export class BudgetInputComponent {
                 removeData.push({ budget_id: supply.budget_id, data: { is_removed: 1 } })
               }
             })
-            console.log(removeData);
             if (removeData.length > 0) {
               await this.updateMultipleSupplyBudget(removeData).then((isSuccess) => {
                 if (isSuccess) this.clickSubject.next("RemoveMultiple")

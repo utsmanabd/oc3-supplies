@@ -96,7 +96,7 @@
                         <ul class="dropdown-menu dropdown-menu-end"
                             aria-labelledby="dropdownMenuLink4" ngbDropdownMenu>
                             <li><a class="dropdown-item" (click)="openDetailModal(detailModal, data)" href="javascript:void(0);">Detail</a></li>
-                            <li><a class="dropdown-item" href="javascript:void(0);">Edit</a></li>
+                            <li><a class="dropdown-item" (click)="openUpdateModal(updateModal, data)" href="javascript:void(0);">Edit</a></li>
                             <li><a class="dropdown-item" (click)="onDeleteSupplyBudget(data)" href="javascript:void(0);">Delete</a></li>
                         </ul>
                     </div>
@@ -136,7 +136,7 @@
                                 <div class="fs-6">{{ common.formatDecimal(item.quantity) }}</div>
                             </div>
                             <div class="d-flex justify-content-between">
-                                <div class="fs-12 text-muted">Price </div>
+                                <div class="fs-12 text-muted">Value ($) </div>
                                 <div class="fs-6">{{ common.getRupiahFormat(item.price) }}</div>
                             </div>
                             <div class="d-flex justify-content-between">

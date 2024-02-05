@@ -156,12 +156,16 @@ export class restApiService {
     return this.requestHttpPost(`supplies`, data)
   }
 
-  updateSupplies(id: any, data: any) {
-    return this.requestHttpPut(`supplies`, id, data)
+  updateSupplies(budgetId: any, data: any) {
+    return this.requestHttpPut(`supplies`, budgetId, data)
   }
 
   updateMultipleSupplies(data: any) {
     return this.requestHttpPost(`supplies/multiple`, data)
+  }
+
+  updateSuppliesByBudgetAndProdplanId(budgetId: any, data: any) {
+    return this.requestHttpPost(`supplies/budget-prodplan/${budgetId}`, data)
   }
 
   isBudgetIdAvailable(budgetId: string) {
