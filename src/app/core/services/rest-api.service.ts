@@ -160,6 +160,10 @@ export class restApiService {
     return this.requestHttpPut(`supplies`, id, data)
   }
 
+  updateMultipleSupplies(data: any) {
+    return this.requestHttpPost(`supplies/multiple`, data)
+  }
+
   isBudgetIdAvailable(budgetId: string) {
     return this.requestHttpGet(`supplies/budget-id/is-available/${budgetId}`)
   }

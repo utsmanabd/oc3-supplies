@@ -29,9 +29,9 @@
         <div class="col-sm-auto">
           <div class="d-flex gap-1">
             <button (click)="openUpdateModal(updateModal)" type="button" class="btn btn-primary add-btn" id="create-btn">
-              <i class="ri-add-line align-bottom me-1"></i> Add Supplies
+              <i class="ri-add-line align-bottom me-1"></i> Add
             </button>
-            <button class="btn btn-soft-danger"><i class="ri-delete-bin-2-line"></i></button>
+            <button class="btn btn-soft-danger" (click)="onDeleteSupplyBudget()"><i class="ri-delete-bin-2-line"></i></button>
           </div>
         </div>
         <div class="col-sm">
@@ -51,8 +51,8 @@
               <tr>
                 <th scope="col">
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="" id="cardtableCheck">
-                        <label class="form-check-label" for="cardtableCheck"></label>
+                        <input (change)="onChecklistAll($event)" class="form-check-input" type="checkbox" value="0" id="check">
+                        <label class="form-check-label" for="check"></label>
                     </div>
                 </th>
                 <th *ngFor="let col of tableColumns" scope="col">{{ col }}</th>
@@ -62,7 +62,7 @@
               <tr *ngFor="let data of suppliesData; let i = index">
                 <td>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="" id="check_{{data.budget_id}}">
+                        <input [(ngModel)]="data.is_selected" (change)="onCheckedSupplyBudget($event)" class="form-check-input" name="check_{{data.budget_id}}" type="checkbox" value="{{ data.budget_id }}" id="check_{{data.budget_id}}">
                         <label class="form-check-label" for="check_{{data.budget_id}}"></label>
                     </div>
                 </td>
@@ -97,7 +97,7 @@
                             aria-labelledby="dropdownMenuLink4" ngbDropdownMenu>
                             <li><a class="dropdown-item" (click)="openDetailModal(detailModal, data)" href="javascript:void(0);">Detail</a></li>
                             <li><a class="dropdown-item" href="javascript:void(0);">Edit</a></li>
-                            <li><a class="dropdown-item" href="javascript:void(0);">Delete</a></li>
+                            <li><a class="dropdown-item" (click)="onDeleteSupplyBudget(data)" href="javascript:void(0);">Delete</a></li>
                         </ul>
                     </div>
                 </td>

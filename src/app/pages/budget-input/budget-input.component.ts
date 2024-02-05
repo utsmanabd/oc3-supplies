@@ -131,6 +131,7 @@ export class BudgetInputComponent {
           this.isLoading = false
           this.suppliesData = res.data;
           this.suppliesData.forEach(item => {
+            item.is_selected = false;
             item.average_price = +item.average_price
             item.bom = +item.bom
             item.budgeting_data.forEach((data: any) => {
@@ -233,19 +234,6 @@ export class BudgetInputComponent {
           reject(err)
         }
       })
-    })
-  }
-
-  updateSupplyBudget(id: any, data: any) {
-    this.isLoading = true
-    this.apiService.updateSupplies(id, data).subscribe({
-      next: (res: any) => {
-        this.isLoading = false
-      },
-      error: (err) => {
-        this.isLoading = false
-        this.common.showErrorAlert(Const.ERR_UPDATE_MSG("Supply"), err)
-      }
     })
   }
 
@@ -427,6 +415,51 @@ export class BudgetInputComponent {
     })
   }
 
+  onDeleteSupplyBudget(data?: any) {
+    if (data) {
+      this.common.showDeleteWarningAlert(Const.ALERT_DEL_MSG(`${data.material_desc} (${data.section})`)).then(async result => {
+        if (result.value) {
+          const removeData = { is_removed: 1 }
+          await this.updateSupplyBudget(data.budget_id, removeData).then((isSuccess) => this.clickSubject.next("Delete"))
+        }
+      })
+    } else {
+      let selectedCount = 0
+      this.suppliesData.forEach(item => {
+        if (item.is_selected) selectedCount += 1
+      })
+      if (selectedCount > 0) {
+        this.common.showDeleteWarningAlert(Const.ALERT_DEL_MSG(`${selectedCount} Supplies`)).then(async result => {
+          if (result.value) {
+            const removeData: any[] = []
+            this.suppliesData.forEach(supply => {
+              if (supply.is_selected) {
+                removeData.push({ budget_id: supply.budget_id, data: { is_removed: 1 } })
+              }
+            })
+            console.log(removeData);
+            if (removeData.length > 0) {
+              await this.updateMultipleSupplyBudget(removeData).then((isSuccess) => {
+                if (isSuccess) this.clickSubject.next("RemoveMultiple")
+              })
+            }
+          }
+        })
+      }
+    }
+  }
+
+  onChecklistAll(event: any) {
+    this.suppliesData.forEach(supply => event.target.checked ? supply.is_selected = true : supply.is_selected = false)
+  }
+
+  onCheckedSupplyBudget(event: any) {
+    const condition = event.target.checked
+    const budgetId = event.target.value
+    const index = this.common.getIndexById(this.suppliesData, budgetId, "budget_id")
+    this.suppliesData[index].is_selected = condition
+  }
+
   async updateMaterial(id: any, data: any) {
     return new Promise((resolve, reject) => {
       this.isLoading = true;
@@ -442,7 +475,40 @@ export class BudgetInputComponent {
         }
       })
     })
-    
+  }
+
+  async updateSupplyBudget(id: any, data: any) {
+    return new Promise((resolve, reject) => {
+      this.isLoading = true;
+      this.apiService.updateSupplies(id, data).subscribe({
+        next: (res: any) => {
+          this.isLoading = false
+          resolve(true)
+        },
+        error: (err) => {
+          this.isLoading = false
+          this.common.showErrorAlert(Const.ERR_UPDATE_MSG("Supply"), err)
+          reject(err)
+        }
+      })
+    })
+  }
+
+  async updateMultipleSupplyBudget(data: any) {
+    return new Promise((resolve, reject) => {
+      this.isLoading = true;
+      this.apiService.updateMultipleSupplies(data).subscribe({
+        next: (res: any) => {
+          this.isLoading = false
+          resolve(true)
+        },
+        error: (err) => {
+          this.isLoading = false
+          this.common.showErrorAlert(Const.ERR_UPDATE_MSG("Supplies"), err)
+          reject(err)
+        }
+      })
+    })
   }
 
   insertSupplyBudget(data: any) {

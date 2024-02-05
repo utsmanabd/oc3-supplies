@@ -110,7 +110,7 @@ export class CommonService {
   }
 
   // Array manipulation
-  getIndexById(arr: any[], id: number, idKey: string): number {
+  getIndexById(arr: any[], id: any, idKey: string): number {
     for (let i = 0; i < arr.length; i++) {
       if (arr[i][idKey] === id) {
         return i;
