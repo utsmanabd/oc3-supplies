@@ -80,7 +80,7 @@
                     <td>
                         <div class="d-flex">
                             <div class="g-0 align-items-center">
-                                <input type="number" class="form-control" [(ngModel)]="data.weekly_count">
+                                <input (change)="getTotalWeeks(temporaryProdplan)" type="number" class="form-control" [(ngModel)]="data.weekly_count">
                             </div>
                         </div>
                         
@@ -120,6 +120,7 @@
         </div>
         <div class="d-flex justify-content-center">
             <button type="button" class="btn btn-{{ isCreateMode ? 'danger' : 'primary' }}" (click)="onCreateModeChange()">{{ isCreateMode ? 'Cancel' : 'Create Prodplan' }}</button>
+            <button *ngIf="isCreateMode" class="ms-2 btn btn-soft-primary" type="button" (click)="getpreviousYearProdplan()">Get Last Year Prodplan</button>
         </div>
     </div>
     

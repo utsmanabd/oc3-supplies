@@ -73,9 +73,7 @@ export class ProdplanComponent {
         this.selectedLine = this.lineData[value].name
       }
       this.apiService.resetCachedData("prodplanYearLine")
-      await this.getProdplanByYearAndLine(this.year, this.lineId).then((result) => {
-        if (result) this.getTotalWeeks(this.prodplanData)
-      })
+      await this.getProdplanByYearAndLine(this.year, this.lineId)
     })
   }
 
@@ -126,6 +124,7 @@ export class ProdplanComponent {
         },
         complete: () => {
           this.getTotalProdplan(this.prodplanData)
+          this.getTotalWeeks(this.prodplanData)
           resolve(true)
         }
       })
@@ -227,7 +226,7 @@ export class ProdplanComponent {
         })
       })
       this.temporaryProdplan = temporaryData
-      this.getTotalWeeks(this.temporaryProdplan)
+      setTimeout(() => {this.getTotalWeeks(this.temporaryProdplan)}, 50)
     } else {
       this.isCreateMode = false
       this.temporaryProdplan = []
@@ -307,6 +306,33 @@ export class ProdplanComponent {
       error: (err) => {
         this.isLoading = false
         this.common.showErrorAlert(Const.ERR_UPDATE_MSG("Prodplan"), err)
+      }
+    })
+  }
+
+  getpreviousYearProdplan() {
+    const previousYear = this.year - 1
+    this.isLoading = true
+    console.log(previousYear);
+    console.log(this.lineId);
+    this.apiService.resetCachedData("prodplanYearLine")
+    this.apiService.getProdplanByYearAndLine(previousYear, this.lineId).subscribe({
+      next: (res: any) => {
+        this.isLoading = false
+        let previousYearData: any[] = res.data
+        console.log(previousYearData);
+        
+        if (previousYearData.length > 0) {
+          for (let i in previousYearData) {
+            this.temporaryProdplan[i].prodplan = +previousYearData[i].prodplan
+          }
+          this.getTotalProdplan(this.temporaryProdplan)
+        }
+        else this.common.showErrorAlert(`Previous year prodplan data not available`, `Not Found`)
+      },
+      error: (err) => {
+        this.isLoading = false
+        this.common.showErrorAlert(Const.ERR_GET_MSG("Prodplan"), err)
       }
     })
   }

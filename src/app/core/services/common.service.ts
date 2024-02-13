@@ -119,6 +119,21 @@ export class CommonService {
     return -1;
   }
 
+  getUniqueData(arr: any[], property: string): any[] {
+    let uniqueData: { [key: string]: any } = {};
+    let result: any[] = [];
+  
+    for (let obj of arr) {
+      let value = obj[property];
+      if (!uniqueData[value]) {
+        uniqueData[value] = obj;
+        result.push(obj);
+      }
+    }
+  
+    return result;
+  }
+
   // HTML Doc Manipulation
   goToTop() {
     document.body.scrollTop = 0;

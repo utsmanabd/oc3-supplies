@@ -15,6 +15,8 @@ import { ToastService } from '../dashboards/dashboard/toast-service';
 })
 export class BudgetInputComponent {
   
+  monthData = [1,2,3,4,5,6,7,8,9,10,11,12]
+  sectionData: any[] = []
   tableColumns = ['Section / Cost Center', 'Material Code', 'Material Description', 'Calculation by', 'UOM', 'Average Price', 'BOM', 'Total Quantity', 'Total Price', ' ']
   index: number = 0;
 
@@ -37,9 +39,12 @@ export class BudgetInputComponent {
     budgetingData: []
   }
 
+  budgetId: string = ''
+
   lineIdBefore!: number;
   lineData: any[] = [];
   suppliesData: any[] = [];
+  suppliesDataBefore: any[] = [];
   calculationData: any[] = [];
   prodplanData: any[] = [];
 
@@ -85,6 +90,10 @@ export class BudgetInputComponent {
   totalPrice: number = 0;
   totalQuantity: number = 0;
 
+  selectedMonthFilter = -1
+  selectedSectionFilter = -1
+  isFilterChange = false;
+
   private clickSubject = new Subject<string>()
 
   constructor(
@@ -102,7 +111,18 @@ export class BudgetInputComponent {
         this._year = this.year
         this.apiService.resetCachedData("suppliesYearLine")
         this.apiService.resetCachedData("prodplanYearLine")
-        await this.getSuppliesByYearAndLine(this.year, this.selectedLine.lineId)
+        if (value !== "filterChange") {
+          this.sectionData = []
+          this.selectedMonthFilter = -1
+          this.selectedSectionFilter = -1
+        }
+        await this.getSuppliesByYearAndLine(this.year, this.selectedLine.lineId).then(() => {
+          if (value == "filterChange") {
+            this.onSupplyFilter(null, this.selectedMonthFilter, this.selectedSectionFilter)
+            console.log("AAA");
+            console.log(this.selectedSectionFilter);
+          }
+        })
         await this.getProdplanByYearAndLine(this.year, this.selectedLine.lineId)
       })
   }
@@ -140,6 +160,15 @@ export class BudgetInputComponent {
               data.price = +data.price
             })
           })
+          let section = this.common.getUniqueData(this.suppliesData, 'cost_ctr_id')
+          if (this.sectionData.length <= 0) {
+            section.forEach(item => {
+              this.sectionData.push({cost_ctr_id: item.cost_ctr_id, section: item.section, cost_center: item.cost_center})
+            })
+          }
+          this.suppliesDataBefore = this.suppliesData.map(supply => ({...supply}))
+          console.log("sectionData: ", this.sectionData);
+          
         },
         error: (err) => {
           this.isLoading = false
@@ -300,7 +329,6 @@ export class BudgetInputComponent {
     if (event.target.value) {
       const selectedCalculationIndex = this.common.getIndexById(this.calculationData, +event.target.value, "id")
       this.selectedCalculationBy = JSON.parse(this.calculationData[selectedCalculationIndex].value)
-      const selectedId = this.selectedCalculationBy.id
     }
   }
 
@@ -325,7 +353,6 @@ export class BudgetInputComponent {
     this.modalService.open(content, { size: 'lg' })
   }
 
-  budgetId: string = ''
   openUpdateModal(content: TemplateRef<any>, data?: any) {
     if (this.prodplanData.length !== 12) {
       this.showProdplanNotFoundAlert()
@@ -424,7 +451,7 @@ export class BudgetInputComponent {
       this.apiService.updateSuppliesByBudgetAndProdplanId(this.budgetId, data).subscribe({
         next: (res: any) => {
           this.isLoading = false
-          this.clickSubject.next("Update")
+          this.clickSubject.next(this.isFilterChange ? "filterChange" : "Update")
           this.modalService.dismissAll("Edit")
         },
         error: (err) => {
@@ -451,7 +478,7 @@ export class BudgetInputComponent {
       this.common.showDeleteWarningAlert(Const.ALERT_DEL_MSG(`${data.material_desc} (${data.section})`)).then(async result => {
         if (result.value) {
           const removeData = { is_removed: 1 }
-          await this.updateSupplyBudget(data.budget_id, removeData).then((isSuccess) => this.clickSubject.next("Delete"))
+          await this.updateSupplyBudget(data.budget_id, removeData).then((isSuccess) => this.clickSubject.next(this.isFilterChange ? "filterChange" : "Delete"))
         }
       })
     } else {
@@ -470,7 +497,21 @@ export class BudgetInputComponent {
             })
             if (removeData.length > 0) {
               await this.updateMultipleSupplyBudget(removeData).then((isSuccess) => {
-                if (isSuccess) this.clickSubject.next("RemoveMultiple")
+                if (isSuccess) {
+                  if (removeData.length > 10) {
+                    console.log("> 10");
+                    
+                    this.isLoading = true
+                    setTimeout(() => {
+                      this.isLoading = false
+                      this.clickSubject.next(this.isFilterChange ? "filterChange" : "RemoveMultiple")
+                    }, 5000)
+                  } else {
+                    console.log("< 10");
+                    
+                    this.clickSubject.next(this.isFilterChange ? "filterChange" : "RemoveMultiple")
+                  }
+                }
               })
             }
           }
@@ -545,20 +586,170 @@ export class BudgetInputComponent {
     this.isLoading = true
     this.apiService.insertSupplies(data).subscribe({
       next: (res: any) => {
-        this.clickSubject.next("Insert")
+        this.clickSubject.next(this.isFilterChange ? "filterChange" : "Insert")
         this.isLoading = false
-        this.modalService.dismissAll()
-        this.common.showSuccessAlert("Supply updated successfully!").then((result) => {
-          if (result.value) {
-            
-          }
-        })
+        if (this.modalService.hasOpenModals()) {
+          this.modalService.dismissAll()
+        }
+        this.common.showSuccessAlert("Supply updated successfully!")
       },
       error: (err) => {
         this.isLoading = false
         this.common.showErrorAlert(Const.ERR_INSERT_MSG("Supply"), err)
       }
     })
+  }
+
+  onPreviousYearFetchData() {
+    if (this.prodplanData.length !== 12) {
+      this.showProdplanNotFoundAlert()
+    } else {
+      this.common.showDeleteWarningAlert(
+        "This action will directly create budgeting data based on the previous year's data. Are you sure you want to continue?",
+        "Alert", "Yes"
+        ).then(result => {
+          if (result.value) {
+            const previousYear = this.year - 1
+            let temporarySuppliesData: any[] = []
+            this.isLoading = true
+            this.apiService.resetCachedData("suppliesYearLine")
+            this.apiService.getSuppliesByYearAndLine(previousYear, this.selectedLine.lineId).subscribe({
+              next: (res: any) => {
+                let data: any[] = res.data
+                if (data.length > 0) {
+                  data.forEach(item => {
+                    let [, , ...rest] = item.budget_id.split('-')
+                    this.prodplanData.forEach((prodplan) => {
+                      let quantity = 0
+                      let price = 0
+                      if (item.calculation_id == 1) {
+                        quantity = +prodplan.prodplan / 1000 * +item.bom
+                      } else if (item.calculation_id == 2) {
+                        quantity = prodplan.daily_count * +item.bom
+                      } else if (item.calculation_id == 3) {
+                        quantity = prodplan.weekly_count * +item.bom
+                      } else if (item.calculation_id == 4) {
+                        quantity = prodplan.monthly_count * +item.bom
+                      }
+                      price = quantity * +item.average_price
+                      temporarySuppliesData.push({
+                        budget_id: `${this.year}-${this.selectedLine.lineId}-${rest.join('-')}`,
+                        material_id: item.material_id,
+                        cost_ctr_id: item.cost_ctr_id,
+                        calc_budget_id: item.calculation_id,
+                        prodplan_id: prodplan.id,
+                        bom: +item.bom,
+                        quantity: quantity,
+                        price: price
+                      })
+                    })
+                  })
+        
+                  setTimeout(() => {
+                    this.insertSupplyBudget(temporarySuppliesData)
+                  }, 1500)
+                } else {
+                  this.isLoading = false
+                  this.common.showErrorAlert("The previous year's data is empty!", "Failed")
+                }
+              },
+              error: (err) => {
+                this.isLoading = false
+                this.common.showErrorAlert(Const.ERR_GET_MSG("Supplies"), err)
+              }
+            })
+          }
+        })
+    }
+  }
+
+  onSupplyFilter(event: any, month?: number, sectionId?: number) {
+    this.suppliesData = this.suppliesDataBefore
+
+    const getFilteredMonthData = () => {
+      return this.suppliesData.map(supply => {
+        const filteredMonth = supply.budgeting_data.filter((data: any) => data.month == this.selectedMonthFilter)
+        return {
+          budget_id: supply.budget_id,
+          line: supply.line,
+          year: supply.year,
+          section: supply.section,
+          cost_center: supply.cost_center,
+          material_code: supply.material_code,
+          material_desc: supply.material_desc,
+          calculation_by: supply.calculation_by,
+          uom: supply.uom,
+          average_price: supply.average_price,
+          bom: supply.bom,
+          calculation_id: supply.calculation_id,
+          cost_ctr_id: supply.cost_ctr_id,
+          line_id: supply.line_id,
+          material_id: supply.material_id,
+          budgeting_data: filteredMonth
+        }
+      })
+    }
+
+    if (event != null) {
+      console.log(event.target.id);
+      if (event.target.id === 'monthFilter') {
+        this.selectedMonthFilter = +event.target.value;
+      }
+  
+      if (event.target.id === 'sectionFilter') {
+        this.selectedSectionFilter = +event.target.value;
+      }
+    } else {
+      console.log("BBB");
+      
+      if (month && sectionId) {
+        console.log(sectionId);
+        
+        this.selectedMonthFilter = month
+        this.selectedSectionFilter = sectionId
+      }
+    }
+
+    this.isFilterChange = true
+
+    if (this.selectedMonthFilter !== -1 && this.selectedSectionFilter !== -1) {
+      this.suppliesData = getFilteredMonthData().filter(supply => supply.cost_ctr_id === this.selectedSectionFilter)
+    } else if (this.selectedMonthFilter === -1 && this.selectedSectionFilter !== -1) {
+      this.suppliesData = this.suppliesData.filter(supply => supply.cost_ctr_id === this.selectedSectionFilter);
+    } else if (this.selectedMonthFilter !== -1 && this.selectedSectionFilter === -1) {
+      this.suppliesData = getFilteredMonthData()
+    } else {
+      this.suppliesData = this.suppliesDataBefore
+      this.isFilterChange = false
+    }
+
+    this.getTotalQuantityAndPrice(this.suppliesData)
+    
+  }
+
+  searchKeyword = ''
+  supplies() {
+    return this.suppliesData.filter(
+      (data) =>
+        data.section
+          .toLowerCase()
+          .includes(this.searchKeyword.trim().toLowerCase()) ||
+        data.material_desc
+          .toLowerCase()
+          .includes(this.searchKeyword.trim().toLowerCase()) ||
+        data.uom
+          .toLowerCase()
+          .includes(this.searchKeyword.trim().toLowerCase()) ||
+        data.calculation_by
+          .toLowerCase()
+          .includes(this.searchKeyword.trim().toLowerCase()) ||
+        data.cost_center.toString()
+          .includes(this.searchKeyword.trim()) ||
+        data.material_code.toString()
+          .includes(this.searchKeyword.trim()) ||
+        `${data.cost_center}-${data.material_code}`
+          .includes(this.searchKeyword.trim().toLowerCase())
+    )
   }
   
 }
