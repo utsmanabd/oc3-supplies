@@ -6,6 +6,10 @@ import { DashboardComponent } from "./dashboards/dashboard/dashboard.component";
 import { BudgetInputComponent } from './budget-input/budget-input.component';
 import { UserManagementComponent } from './user-management/user-management.component';
 import { ProdplanComponent } from './prodplan/prodplan.component';
+import { UsersComponent } from './master/users/users.component';
+import { CostCenterComponent } from './master/cost-center/cost-center.component';
+import { CalculationBudgetComponent } from './master/calculation-budget/calculation-budget.component';
+import { MaterialComponent } from './master/material/material.component';
 
 const routes: Routes = [
     {
@@ -13,7 +17,7 @@ const routes: Routes = [
         component: DashboardComponent
     },
     {
-      path: "input",
+      path: "supplies",
       component: BudgetInputComponent
     },
     {
@@ -21,9 +25,22 @@ const routes: Routes = [
       component: ProdplanComponent
     },
     {
-      path: "users",
-      component: UserManagementComponent
-    }
+      path: "master/material",
+      component: MaterialComponent
+    },
+    {
+      path: "master/cost-center",
+      component: CostCenterComponent
+    },
+    {
+      path: "master/calc-budget",
+      component: CalculationBudgetComponent
+    },
+    {
+      path: "master/users",
+      component: UsersComponent
+    },
+
 ];
 
 @NgModule({

@@ -111,11 +111,11 @@
 
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink4" ngbDropdownMenu>
                   <li><a class="dropdown-item" (click)="openDetailModal(detailModal, data)"
-                      href="javascript:void(0);">Detail</a></li>
+                      href="javascript:void(0);"><i class="ri ri-eye-line me-2"></i>Detail</a></li>
                   <li><a class="dropdown-item" (click)="openUpdateModal(updateModal, data)"
-                      href="javascript:void(0);">Edit</a></li>
+                      href="javascript:void(0);"><i class="ri ri-edit-2-line me-2"></i>Edit</a></li>
                   <li><a class="dropdown-item" (click)="onDeleteSupplyBudget(data)"
-                      href="javascript:void(0);">Delete</a></li>
+                      href="javascript:void(0);"><i class="ri ri-delete-bin-line me-2"></i>Delete</a></li>
                 </ul>
               </div>
             </td>
@@ -243,15 +243,43 @@
 <ng-template #budgetingNotFound>
   <div class="container p-3">
     <div class="d-flex justify-content-center mb-1">
-      <h3>Not found!</h3>
+      <h3>Empty</h3>
     </div>
     <div class="d-flex justify-content-center mb-3">
       <a class="text-muted">Budgeting data on factory line {{ selectedLine.lineName }} in {{ _year }} has not been
         planned yet.</a>
     </div>
     <div class="d-flex justify-content-center">
-      <button type="button" class="btn btn-soft-primary" (click)="onPreviousYearFetchData()">Get Data From Previous
+      <button type="button" class="btn btn-soft-primary" (click)="openPrevModal(prevmodal)">Get Data From Previous
         Year</button>
     </div>
+  </div>
+</ng-template>
+
+<ng-template #prevmodal let-modal>
+  <div class="modal-header">
+      <h4 class="modal-title" id="modal-basic-title">Get Previous Year's Supplies</h4>
+      <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+      <form>
+          <div class="mb-3">
+              <label for="percentage">BOM percentage</label>
+              <div class="input-group">
+                  <input [(ngModel)]="prevBomPercentage" type="number" class="form-control" id="percentage" name="percentage">
+                  <span class="input-group-text">%</span>
+              </div>
+              <div class="fs-6">
+                <small>The BOM of each supply in {{ _year }} will be <span class="text-primary"><b>{{ prevBomPercentage }}%</b></span> of the previous year.</small>
+              </div>
+              <span class="fs-7 text-muted">
+                <small>*The quantity and price of each supply will be generated based on selected year's prodplan and BOM percentage.</small>
+              </span>
+          </div>
+      </form>
+  </div>
+  <div class="modal-footer">
+      <button type="button" class="btn btn-light" (click)="modal.dismiss()">Cancel</button>
+      <button [disabled]="isLoading || prevBomPercentage <= 0" type="button" class="btn btn-success" (click)="onPreviousFetchData()">Get</button>
   </div>
 </ng-template>

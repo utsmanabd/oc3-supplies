@@ -19,20 +19,47 @@ export const MENU: MenuItem[] = [
   },
   {
     id: createMenuId(),
-    label: 'Supplies Input',
-    icon: 'box',
-    link: 'input'
+    label: 'Supplies',
+    icon: 'layers',
+    link: 'supplies'
   },
   {
     id: createMenuId(),
     label: 'Prodplan',
-    icon: 'dollar-sign',
+    icon: 'list',
     link: 'prodplan'
   },
   {
     id: createMenuId(),
+    label: 'Master Data',
+    isTitle: true
+  },
+  {
+    id: createMenuId(),
+    label: 'Material',
+    icon: 'box',
+    link: 'master/material'
+  },
+  {
+    id: createMenuId(),
+    label: 'Cost Center',
+    icon: 'dollar-sign',
+    link: 'master/cost-center'
+  },
+  {
+    id: createMenuId(),
+    label: 'Calculation Budget',
+    icon: 'percent',
+    link: 'master/calc-budget'
+  },
+  {
+    id: createMenuId(),
     label: 'Users',
-    icon: 'user',
-    link: 'users'
+    icon: 'users',
+    link: 'master/users'
   },
 ];
+
+// export const MASTER_MENU: MenuItem[] = [
+  
+// ]

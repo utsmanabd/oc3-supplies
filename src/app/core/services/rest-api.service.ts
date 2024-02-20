@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { Observable, map, of, tap, throwError } from "rxjs";
+import { Observable, debounceTime, delay, map, of, switchMap, tap, throwError } from "rxjs";
 import { GlobalComponent } from "../../global-component";
 
 const httpOptions = {
@@ -187,6 +187,10 @@ export class restApiService {
   }
 
   // Material API
+  getMaterialByPagination(page: number, pageSize: number) {
+    return this.requestHttpGet(`material/pagination?page=${page}&pageSize=${pageSize}`)
+  }
+
   searchMaterial(term: string) {
     if (term === '') {
       return of([])
@@ -226,5 +230,19 @@ export class restApiService {
           : []
         )
       )
+  }
+
+  private totalItems = 100;
+
+  getDummyData(page: number, itemsPerPage: number):Observable<string[]>{
+   const startIndex = (page - 1) * itemsPerPage;
+   const endIndex = startIndex + itemsPerPage;
+   const items = [];
+   for(let i = startIndex; i < endIndex; i++){
+    if(i < this.totalItems){
+      items.push(`Item ${i + 1}`);
+    }
+   }
+   return of(items).pipe(delay(500));
   }
 }

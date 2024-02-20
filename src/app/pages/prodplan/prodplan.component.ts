@@ -310,6 +310,16 @@ export class ProdplanComponent {
     })
   }
 
+  prevProdplanPercentage: number = 100
+
+  openPrevModal(content: any) {
+
+    this.modalService.open(content, { ariaLabelledBy: 'modal-basic-title', size: 'sm', centered: true }).result.then(
+      (result) => this.prevProdplanPercentage = 100,
+			(reason) => this.prevProdplanPercentage = 100
+    )
+  }
+
   getpreviousYearProdplan() {
     const previousYear = this.year - 1
     this.isLoading = true
@@ -324,9 +334,10 @@ export class ProdplanComponent {
         
         if (previousYearData.length > 0) {
           for (let i in previousYearData) {
-            this.temporaryProdplan[i].prodplan = +previousYearData[i].prodplan
+            this.temporaryProdplan[i].prodplan = +previousYearData[i].prodplan * (this.prevProdplanPercentage / 100)
           }
           this.getTotalProdplan(this.temporaryProdplan)
+          this.modalService.dismissAll()
         }
         else this.common.showErrorAlert(`Previous year prodplan data not available`, `Not Found`)
       },

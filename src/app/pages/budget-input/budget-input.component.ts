@@ -600,67 +600,78 @@ export class BudgetInputComponent {
     })
   }
 
-  onPreviousYearFetchData() {
+  prevBomPercentage: number = 100
+  openPrevModal(content?: any) {
     if (this.prodplanData.length !== 12) {
       this.showProdplanNotFoundAlert()
     } else {
-      this.common.showDeleteWarningAlert(
-        "This action will directly create budgeting data based on the previous year's data. Are you sure you want to continue?",
-        "Alert", "Yes"
-        ).then(result => {
-          if (result.value) {
-            const previousYear = this.year - 1
-            let temporarySuppliesData: any[] = []
-            this.isLoading = true
-            this.apiService.resetCachedData("suppliesYearLine")
-            this.apiService.getSuppliesByYearAndLine(previousYear, this.selectedLine.lineId).subscribe({
-              next: (res: any) => {
-                let data: any[] = res.data
-                if (data.length > 0) {
-                  data.forEach(item => {
-                    let [, , ...rest] = item.budget_id.split('-')
-                    this.prodplanData.forEach((prodplan) => {
-                      let quantity = 0
-                      let price = 0
-                      if (item.calculation_id == 1) {
-                        quantity = +prodplan.prodplan / 1000 * +item.bom
-                      } else if (item.calculation_id == 2) {
-                        quantity = prodplan.daily_count * +item.bom
-                      } else if (item.calculation_id == 3) {
-                        quantity = prodplan.weekly_count * +item.bom
-                      } else if (item.calculation_id == 4) {
-                        quantity = prodplan.monthly_count * +item.bom
-                      }
-                      price = quantity * +item.average_price
-                      temporarySuppliesData.push({
-                        budget_id: `${this.year}-${this.selectedLine.lineId}-${rest.join('-')}`,
-                        material_id: item.material_id,
-                        cost_ctr_id: item.cost_ctr_id,
-                        calc_budget_id: item.calculation_id,
-                        prodplan_id: prodplan.id,
-                        bom: +item.bom,
-                        quantity: quantity,
-                        price: price
-                      })
+      this.modalService.open(content, { ariaLabelledBy: 'modal-basic-title', centered: true }).result.then(
+        (result) => this.prevBomPercentage = 100,
+        (reason) => this.prevBomPercentage = 100
+      )
+    }
+  }
+
+  onPreviousFetchData() {
+    this.common.showDeleteWarningAlert(
+      "This action will directly create budgeting data based on the previous year's data. Are you sure you want to continue?",
+      "Alert", "Yes"
+      ).then(result => {
+        if (result.value) {
+          const previousYear = this.year - 1
+          let temporarySuppliesData: any[] = []
+          this.isLoading = true
+          this.apiService.resetCachedData("suppliesYearLine")
+          this.apiService.getSuppliesByYearAndLine(previousYear, this.selectedLine.lineId).subscribe({
+            next: (res: any) => {
+              let data: any[] = res.data
+              if (data.length > 0) {
+                data.forEach(item => {
+                  let [, , ...rest] = item.budget_id.split('-')
+                  this.prodplanData.forEach((prodplan) => {
+                    let quantity = 0
+                    let price = 0
+                    let bom = +item.bom * (this.prevBomPercentage / 100)
+
+                    if (item.calculation_id == 1) {
+                      quantity = +prodplan.prodplan / 1000 * bom
+                    } else if (item.calculation_id == 2) {
+                      quantity = prodplan.daily_count * bom
+                    } else if (item.calculation_id == 3) {
+                      quantity = prodplan.weekly_count * bom
+                    } else if (item.calculation_id == 4) {
+                      quantity = prodplan.monthly_count * bom
+                    }
+                    price = quantity * +item.average_price
+                    temporarySuppliesData.push({
+                      budget_id: `${this.year}-${this.selectedLine.lineId}-${rest.join('-')}`,
+                      material_id: item.material_id,
+                      cost_ctr_id: item.cost_ctr_id,
+                      calc_budget_id: item.calculation_id,
+                      prodplan_id: prodplan.id,
+                      bom: bom,
+                      quantity: quantity,
+                      price: price
                     })
                   })
-        
-                  setTimeout(() => {
-                    this.insertSupplyBudget(temporarySuppliesData)
-                  }, 1500)
-                } else {
-                  this.isLoading = false
-                  this.common.showErrorAlert("The previous year's data is empty!", "Failed")
-                }
-              },
-              error: (err) => {
+                })
+      
+                setTimeout(() => {
+                  this.insertSupplyBudget(temporarySuppliesData)
+                }, 1500)
+              } else {
                 this.isLoading = false
-                this.common.showErrorAlert(Const.ERR_GET_MSG("Supplies"), err)
+                this.common.showErrorAlert("The previous year's data is empty!", "Failed")
               }
-            })
-          }
-        })
-    }
+            },
+            error: (err) => {
+              this.isLoading = false
+              this.common.showErrorAlert(Const.ERR_GET_MSG("Supplies"), err)
+            },
+            complete: () => this.modalService.dismissAll()
+          })
+        }
+      })
   }
 
   onSupplyFilter(event: any, month?: number, sectionId?: number) {
