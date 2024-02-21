@@ -232,8 +232,9 @@ export class restApiService {
       )
   }
 
-  private totalItems = 100;
+  // Dummy API
 
+  private totalItems = 100;
   getDummyData(page: number, itemsPerPage: number):Observable<string[]>{
    const startIndex = (page - 1) * itemsPerPage;
    const endIndex = startIndex + itemsPerPage;
@@ -245,4 +246,34 @@ export class restApiService {
    }
    return of(items).pipe(delay(500));
   }
+
+  // Dashboard
+  getBudgetPerLine(year: number) {
+    return this.requestHttpGet(`dashboard/line-by-year?year=${year}`)
+  }
+  
+  getBudgetPerSection(year: number, lineId: number) {
+    return this.requestHttpGet(`dashboard/section-by-line?year=${year}&lineId=${lineId}`)
+  }
+  
+  getBudgetPerMonthByLine(year: number, lineId: number) {
+    return this.requestHttpGet(`dashboard/month-by-line?year=${year}&lineId=${lineId}`)
+  }
+
+  getBudgetPerSupply(year: number, lineId: number) {
+    return this.requestHttpGet(`dashboard/supply-by-line?year=${year}&lineId=${lineId}`)
+  }
+
+  getBudgetTop5PerSupply(year: number, lineId: number) {
+    return this.requestHttpGet(`dashboard/top-by-line?year=${year}&lineId=${lineId}`)
+  }
+
+  getBudgetPerSectionAndMonth(year: number, lineId: number) {
+    return this.requestHttpGet(`dashboard/sectionmonth-by-line?year=${year}&lineId=${lineId}`)
+  }
+
+  getBudgetPerMonthBySection(year: number, lineId: number, costCenterId: number) {
+    return this.requestHttpGet(`dashboard/month-by-section?year=${year}&lineId=${lineId}&costCenterId=${costCenterId}`)
+  }
+
 }

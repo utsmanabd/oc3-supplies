@@ -2,7 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
 // Component pages
-import { DashboardComponent } from "./dashboards/dashboard/dashboard.component";
+import { DashboardComponent } from "./dashboard/dashboard.component";
 import { BudgetInputComponent } from './budget-input/budget-input.component';
 import { UserManagementComponent } from './user-management/user-management.component';
 import { ProdplanComponent } from './prodplan/prodplan.component';
