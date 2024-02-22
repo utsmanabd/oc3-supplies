@@ -3,7 +3,7 @@
 <div class="d-flex justify-content-start mb-2">
     <div class="row row-cols-lg-auto g-0 align-items-center">
         <label>Factory Line</label>
-        <select [disabled]="isCreateMode" (change)="onFactoryLineChange($event)" class="form-select form-select-sm" [(ngModel)]="lineId">
+        <select [disabled]="isCreateMode" (change)="onFactoryLineChange($event)" class="form-select" [(ngModel)]="lineId">
             <option *ngFor="let item of lineData" value="{{ item.id }}">{{ item.name }}</option>
         </select>
     </div>

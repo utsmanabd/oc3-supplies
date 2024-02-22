@@ -16,13 +16,13 @@
                         <div class="mt-3 mt-lg-0">
                             <div class="row g-3 mb-0 align-items-center">
                                 <div class="col-sm-auto">
-                                    <div class="input-group">
+                                    <!-- <div class="input-group">
                                         <input class="form-control flatpickr-input" type="text" mwlFlatpickr [dateFormat]="'d M, Y'"
                                             [(ngModel)]="currentDate" [altInput]="false" [convertModelValue]="true"
                                             mode="range">
                                         <div class="input-group-text bg-primary border-primary text-white"><i
                                                 class="ri-calendar-2-line"></i></div>
-                                    </div>
+                                    </div> -->
                                 </div>
                                 <!--end col-->
                                 <div class="col-auto">
@@ -48,8 +48,8 @@
 
             <div class="row">
                 <div *ngFor="let stat of statData" class="col-xl-3 col-md-6">
-                    <app-stat [title]="stat.title" [value]="stat.value" [icon]="stat.icon"
-                        [persantage]="stat.persantage" [profit]="stat.profit" [desciption]="stat.desciption"></app-stat>
+                    <!-- <app-stat [title]="stat.title" [value]="stat.value" [icon]="stat.icon"
+                        [persantage]="stat.persantage" [profit]="stat.profit" [desciption]="stat.desciption"></app-stat> -->
                 </div>
             </div> <!-- end row-->
 
@@ -113,7 +113,7 @@
 
                         <div class="card-body p-0 pb-2">
                             <div class="w-100">
-                                <apx-chart dir="ltr" class="apex-charts" [chart]="analyticsChart.chart"
+                                <!-- <apx-chart dir="ltr" class="apex-charts" [chart]="analyticsChart.chart"
                                     [series]="analyticsChart.series" [legend]="analyticsChart.legend"
                                     [stroke]="analyticsChart.stroke" [colors]="analyticsChart.colors"
                                     [fill]="analyticsChart.fill" [dataLabels]="analyticsChart.dataLabels"
@@ -121,7 +121,7 @@
                                     [plotOptions]="analyticsChart.plotOptions" [yaxis]="analyticsChart.yaxis"
                                     [tooltip]="analyticsChart.tooltip" [grid]="analyticsChart.grid"
                                     [labels]="analyticsChart.labels" dir="ltr">
-                                </apx-chart>
+                                </apx-chart> -->
                             </div>
                         </div><!-- end card body -->
                     </div><!-- end card -->
@@ -142,8 +142,8 @@
                         <!-- card body -->
                         <div class="card-body">
 
-                            <div id="sales-by-locations" leaflet style="height: 269px;" [leafletOptions]="options"
-                                [leafletLayers]="layers"></div>
+                            <!-- <div id="sales-by-locations" leaflet style="height: 269px;" [leafletOptions]="options"
+                                [leafletLayers]="layers"></div> -->
 
                             <div class="px-2 py-2 mt-1">
                                 <p class="mb-1">Canada <span class="float-end">75%</span></p>
@@ -202,7 +202,7 @@
 
                         <div class="card-body">
                             <div class="table-responsive table-card">
-                                <app-best-selling [BestSelling]="BestSelling"></app-best-selling>
+                                <!-- <app-best-selling [BestSelling]="BestSelling"></app-best-selling> -->
                             </div>
 
                             <div
@@ -260,7 +260,7 @@
 
                         <div class="card-body">
                             <div class="table-responsive table-card">
-                                <app-top-selling [TopSelling]="TopSelling"></app-top-selling>
+                                <!-- <app-top-selling [TopSelling]="TopSelling"></app-top-selling> -->
                             </div>
 
                             <div
@@ -319,11 +319,11 @@
                         </div><!-- end card header -->
 
                         <div class="card-body">
-                            <apx-chart class="apex-charts" dir="ltr" [series]="SalesCategoryChart.series"
+                            <!-- <apx-chart class="apex-charts" dir="ltr" [series]="SalesCategoryChart.series"
                                 [labels]="SalesCategoryChart.labels" [chart]="SalesCategoryChart.chart"
                                 [legend]="SalesCategoryChart.legend" [stroke]="SalesCategoryChart.stroke"
                                 [dataLabels]="SalesCategoryChart.dataLabels" [colors]="SalesCategoryChart.colors"
-                                dir="ltr"></apx-chart>
+                                dir="ltr"></apx-chart> -->
                         </div>
                     </div> <!-- .card-->
                 </div> <!-- .col-->
@@ -341,7 +341,7 @@
 
                         <div class="card-body">
                             <div class="table-responsive table-card">
-                                <app-recent-orders [RecentSelling]="RecentSelling"></app-recent-orders>
+                                <!-- <app-recent-orders [RecentSelling]="RecentSelling"></app-recent-orders> -->
                             </div>
                         </div>
                     </div> <!-- .card-->
@@ -360,7 +360,7 @@
                     <div class="p-3">
                         <h6 class="text-muted mb-0 text-uppercase fw-semibold">Recent Activity</h6>
                     </div>
-                    <ngx-simplebar style="max-height: 410px;" class="p-3 pt-0">
+                    <!-- <ngx-simplebar style="max-height: 410px;" class="p-3 pt-0">
                         <div class="acitivity-timeline acitivity-main">
                             <div class="acitivity-item d-flex">
                                 <div class="flex-shrink-0 avatar-xs acitivity-avatar">
@@ -488,7 +488,7 @@
                                 </div>
                             </div>
                         </div>
-                    </ngx-simplebar>
+                    </ngx-simplebar> -->
 
                     <div class="p-3 mt-2">
                         <h6 class="text-muted mb-3 text-uppercase fw-semibold">Top 10 Categories</h6>
@@ -823,4 +823,4 @@
     </div> <!-- end col -->
 </div>
 
-<app-toasts aria-live="polite" aria-atomic="true"></app-toasts>
+<!-- <app-toasts aria-live="polite" aria-atomic="true"></app-toasts> -->

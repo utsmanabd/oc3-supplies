@@ -64,11 +64,34 @@ export class CommonService {
     return result;
   }
 
+
+  formatBigNumber(number: number) {
+    if (number < 1000) {
+        return number.toString();
+    } else if (number < 1000000) {
+        return 'Rp' + (number / 1000).toFixed(1) + 'K';
+    } else if (number < 1000000000) {
+        return 'Rp' + (number / 1000000).toFixed(1) + 'M';
+    } else if (number < 1000000000000) {
+        return 'Rp' + (number / 1000000000).toFixed(1) + 'B';
+    } else {
+        return 'Rp' + (number / 1000000000000).toFixed(1) + 'T';
+    }
+}
   // -- Date Function
   getMonthName(month: number): string {
     const monthNames = [
       "January", "February", "March", "April", "May", "June",
       "July", "August", "September", "October", "November", "December"
+    ];
+    
+    return monthNames[month - 1];
+  }
+
+  getSimpleMonthName(month: number): string {
+    const monthNames = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
     ];
     
     return monthNames[month - 1];

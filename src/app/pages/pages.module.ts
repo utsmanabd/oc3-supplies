@@ -19,7 +19,7 @@ import lottie from 'lottie-web';
 // Pages Routing
 import { PagesRoutingModule } from "./pages-routing.module";
 import { SharedModule } from "../shared/shared.module";
-import { DashboardComponent } from './dashboards/dashboard/dashboard.component';
+import { DashboardComponent } from './dashboard/dashboard.component';
 import { ToastsContainer } from './dashboards/dashboard/toasts-container.component';
 import { BudgetInputComponent } from './budget-input/budget-input.component';
 import { UserManagementComponent } from './user-management/user-management.component';

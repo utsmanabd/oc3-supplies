@@ -3,7 +3,7 @@
 <div class="d-flex justify-content-between align-items-center mb-2">
   <div class="me-2">
     <label>Factory Line</label>
-    <select *ngIf="lineData" (change)="onFactoryLineChange($event)" class="form-select form-select-sm"
+    <select *ngIf="lineData" (change)="onFactoryLineChange($event)" class="form-select form-select"
       [(ngModel)]="selectedLine.lineId">
       <option *ngFor="let item of lineData" value="{{ item.id }}"> {{ item.name }} </option>
     </select>
