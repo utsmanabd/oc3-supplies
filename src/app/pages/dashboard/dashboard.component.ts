@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { ChartType } from './dashboard.model';
 import { CommonService } from 'src/app/core/services/common.service';
 import { restApiService } from 'src/app/core/services/rest-api.service';
@@ -28,7 +28,7 @@ export class DashboardComponent {
 
   sectionBudgetBarChart!: ChartType;
   sectionBudgetData: DashboardChart = this.clearChartData()
-
+  
   supplyBudgetTreemapChart!: ChartType;
   supplyBudgetData: DashboardChart = this.clearChartData()
   
@@ -37,6 +37,8 @@ export class DashboardComponent {
 
   sectionBudgetMonthColumnChart!: ChartType
   sectionBudgetMonthColumnData: DashboardChart = this.clearChartData()
+
+  fiveBiggestBudget: any[] = []
 
   clickSubject = new Subject<string>()
 
@@ -54,6 +56,9 @@ export class DashboardComponent {
   totalFactoryBudget: number = 0;
   totalFactoryActual: number = 0;
 
+  @ViewChild("line") line!: ElementRef
+  @ViewChild("section") section!: ElementRef
+
   constructor(public common: CommonService, private apiService: restApiService) {
     this.year = new Date().getFullYear()
     this.clickSubject.pipe(debounceTime(350)).subscribe(value => {
@@ -66,12 +71,18 @@ export class DashboardComponent {
     await this.getBudgetPerLine(this.year)
     await this.getBudgetPerSection(this.year, this.selectedLine.id)
     await this.getBudgetPerSupply(this.year, this.selectedLine.id)
+    await this.getBudgetPerSectionAndMonth(this.year, this.selectedLine.id)
     this._factoryLineBudgetColumnChart('["--vz-primary", "--vz-success"]');
-    this._sectionBudgetBarChart('["--vz-success", "--vz-primary", "--vz-info", "--vz-success-rgb, 0.60", "--vz-primary-rgb, 0.45", "--vz-info-rgb, 0.30"]');
+    this._sectionBudgetBarChart('["--vz-primary", "--vz-info"]');
     this._totalLineBudgetDonutChart('["--vz-success", "--vz-primary", "--vz-info", "--vz-success-rgb, 0.60", "--vz-primary-rgb, 0.45", "--vz-info-rgb, 0.30"]');
     this._supplyBudgetTreemapChart('["--vz-primary"]');
     this._sectionBudgetMonthHeatmapChart('["--vz-success", "--vz-card-bg-custom"]');
     this._sectionBudgetMonthColumnChart('["--vz-primary", "--vz-success"]');
+    setTimeout(() => {
+      console.log(this.section)
+      console.log(this.section.nativeElement);
+      
+    }, 1500)
   }
 
   async getBudgetPerLine(year: number) {
@@ -89,8 +100,6 @@ export class DashboardComponent {
           this.lineData = [...data].map(item => { return { lineId: item.line_id, line: item.line } })
           this.selectedLine.id = this.lineData[0].lineId
           this.selectedLine.name = this.lineData[0].line
-
-          console.log(this.lineData)
         },
         error: (err) => {
           this.isLoading = false
@@ -110,15 +119,13 @@ export class DashboardComponent {
       this.isLoading = true;
       this.apiService.getBudgetPerSection(year, lineId).subscribe({
         next: (res: any) => {
-          console.log(res.data);
-          
           let data: any[] = res.data
           this.sectionBudgetData = this.clearChartData()
           this.sectionBudgetData.rawData = data
           this.sectionBudgetData.series = [...data].map(item => item.price)
           this.sectionBudgetData.categories = [...data].map(item => item.section)
 
-          this.sectionData = [...data].map(item => { return { sectionId: item.cost_ctr_id, section: item.section } })
+          this.sectionData = [...data].map(item => { return { sectionId: item.cost_ctr_id, section: item.section } }).sort((a, b) => a.sectionId - b.sectionId)
           this.selectedSection.id = this.sectionData[0].sectionId
           this.selectedSection.name = this.sectionData[0].section
           
@@ -161,14 +168,15 @@ export class DashboardComponent {
       this.isLoading = true;
       this.apiService.getBudgetPerSupply(year, lineId).subscribe({
         next: (res: any) => {
-          let data: any[] = res.data
+          let data: any[] = res.data.sort((a: any, b: any) => b.price - a.price)
           this.supplyBudgetData = this.clearChartData()
+          this.fiveBiggestBudget = [...data].slice(0, 5)
+
           this.supplyBudgetData.rawData = data
           this.supplyBudgetData.series = [...data].map(item => {
-            return { x: `${item.material_desc} (${item.section})`, y: item.price }
+            return { x: item.material_desc, y: item.price }
           })
-          this.supplyBudgetData.categories = [...data].map(item => `${item.material_desc} (${item.section})`)
-          console.log(this.supplyBudgetData);
+          this.supplyBudgetData.categories = [...data].map(item => item.material_desc)
           
         },
         error: (err) => {
@@ -189,14 +197,37 @@ export class DashboardComponent {
       this.isLoading = true;
       this.apiService.getBudgetPerSectionAndMonth(year, lineId).subscribe({
         next: (res: any) => {
+          let data: any[] = res.data
+          const transformedData: any[] = [...data].reduce((acc: any[], curr: any) => {
+            const existingSection = acc.find((item: any) => item.name === curr.section);
+            if (existingSection) {
+              existingSection.data.push({x: this.common.getSimpleMonthName(curr.month), y: curr.price});
+            } else {
+              acc.push({name: curr.section, data: [{x: this.common.getSimpleMonthName(curr.month), y: curr.price}]});
+            }
+            return acc;
+          }, []);
+          
+          this.sectionBudgetMonthHeatmapData = this.clearChartData()
+          this.sectionBudgetMonthHeatmapData.rawData = data
+          this.sectionBudgetMonthHeatmapData.series = transformedData
 
-          this.isLoading = false;
-          resolve(true)
+          const sectionMonthBudgetData = [...data].filter(item => item.cost_ctr_id === this.selectedSection.id)
+          this.sectionBudgetMonthColumnData = {
+            rawData: sectionMonthBudgetData,
+            series: [...sectionMonthBudgetData].map(item => item.price),
+            categories: [...sectionMonthBudgetData].map(item => this.common.getSimpleMonthName(item.month))
+          }
+          
         },
         error: (err) => {
           this.isLoading = false
           this.common.showServerErrorAlert(Const.ERR_GET_MSG("Budget Per Section and Month"), err)
           reject(err)
+        },
+        complete: () => {
+          this.isLoading = false;
+          resolve(true)
         }
       })
     })
@@ -221,6 +252,8 @@ export class DashboardComponent {
       this.setTotaLineBudgetChartValue()
     })
     await this.getBudgetPerSupply(this.year, lineId).then(() => this.setSupplyBudgetChartValue())
+    await this.getBudgetPerSectionAndMonth(this.year, lineId).then(() => this.setSupplyBudgetMonthChartValue())
+    this.onSectionChange(this.sectionData[0])
   }
 
   setSectionBudgetChartValue() {
@@ -241,6 +274,31 @@ export class DashboardComponent {
 
   setSupplyBudgetChartValue() {
     this.supplyBudgetTreemapChart.series = [{ data: this.supplyBudgetData.series }]
+  }
+
+  setSupplyBudgetMonthChartValue() {
+    this.sectionBudgetMonthHeatmapChart.series = this.sectionBudgetMonthHeatmapData.series
+  }
+
+  setBudgetMonthSectionChartValue() {
+    this.sectionBudgetMonthColumnChart.series = [{ name: 'Budget', data: this.sectionBudgetMonthColumnData.series}]
+    this.sectionBudgetMonthColumnChart.xaxis = { categories: this.sectionBudgetMonthColumnData.categories }
+  }
+
+  onSectionChange(sectionData: any) {
+    this.selectedSection = { name: sectionData.section, id: sectionData.sectionId }
+    const data = [...this.sectionBudgetMonthHeatmapData.rawData!].filter(item => item.cost_ctr_id === sectionData.sectionId)
+    this.sectionBudgetMonthColumnData.rawData = data
+    this.sectionBudgetMonthColumnData.series = [...data].map(item => item.price)
+    this.setBudgetMonthSectionChartValue()
+  }
+
+  onTreemapShowLabels(event: any) {
+    this.isLoading = true
+    setTimeout(() => {
+      this.supplyBudgetTreemapChart.dataLabels = { enabled: event.target.checked }
+      this.isLoading = false;
+    }, 50)
   }
 
   private getChartColorsArray(colors: any) {
@@ -289,7 +347,7 @@ export class DashboardComponent {
     colors = this.getChartColorsArray(colors);
     this.factoryLineBudgetColumnChart = {
       series: [{
-        name: "Budget Plan",
+        name: "Budget",
         data: this.factoryLineBudgetData.series,
       },
       // {
@@ -305,12 +363,12 @@ export class DashboardComponent {
         },
         events: {
           click: (event: any, context: any, config: any) => {
-            console.log("Touched");
             const data = config.config.xaxis.categories[config.dataPointIndex]
             const index = config.dataPointIndex
             const lineId = this.factoryLineBudgetData.rawData![index].line_id
             this.changeFactoryLine(lineId)
-            window.scrollTo(0, 725)
+            this.line.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+            // window.scrollTo(0, 725)
           }
         },
       },
@@ -318,10 +376,20 @@ export class DashboardComponent {
         bar: {
           horizontal: false,
           columnWidth: "45%",
+          dataLabels: {
+            position: 'top'
+          }
         },
       },
       dataLabels: {
-        enabled: false,
+        enabled: true,
+        textAnchor: 'middle',
+        offsetY: -20,
+        style: {
+          fontSize: "10px",
+          colors: ["#000"],
+        },
+        formatter: (val: any) => this.common.formatBigNumber(+val)
       },
       stroke: {
         show: true,
@@ -331,11 +399,20 @@ export class DashboardComponent {
       colors: colors,
       xaxis: {
         categories: this.factoryLineBudgetData.categories,
+        labels: {
+          style: {
+            fontWeight: "bold",
+          }
+        }
       },
       yaxis: {
         title: {
           text: "Rp (Rupiah)",
         },
+        labels: {
+          show: true,
+          formatter: (val: any) => this.common.formatBigNumber(+val)
+        }
       },
       grid: {
         borderColor: "#f1f1f1",
@@ -354,39 +431,68 @@ export class DashboardComponent {
   private _sectionBudgetBarChart(colors: any) {
     colors = this.getChartColorsArray(colors);
     this.sectionBudgetBarChart = {
-      series: [{
-        name: 'Budget',
-        data: this.sectionBudgetData.series
-      }],
+      series: [
+        {
+          name: 'Budget',
+          data: this.sectionBudgetData.series
+        }
+        // {
+        //   name: 'Actual',
+        //   data: [53, 32, 33, 52, 13, 44, 32],
+        // },
+      ],
       chart: {
-        height: 350,
         type: "bar",
+        height: 410,
         toolbar: {
           show: false,
         },
         events: {
           click: (event: any, context: any, config: any) => {
-            console.log(config);
-            
-            console.log("Touched");
-            const data = config.config.xaxis.categories[config.dataPointIndex]
-            const index = config.dataPointIndex
-            console.log(data);
+            console.log(this.sectionBudgetData.rawData![config.dataPointIndex]);
+            const sectionData = {
+              sectionId: this.sectionBudgetData.rawData![config.dataPointIndex].cost_ctr_id,
+              section: this.sectionBudgetData.rawData![config.dataPointIndex].section
+            }
+            this.onSectionChange(sectionData)
+            this.section.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+            // const data = config.config.xaxis.categories[config.dataPointIndex]
+            // const index = config.dataPointIndex
+            // const section = this.factoryLineBudgetData.rawData![index].line_id
+            // this.changeFactoryLine(lineId)
+            // window.scrollTo(0, 725)
           }
         },
       },
       plotOptions: {
         bar: {
           horizontal: true,
-          distributed: true,
+          dataLabels: {
+            position: "top",
+          },
         },
       },
       dataLabels: {
-        enabled: false,
+        enabled: true,
+        offsetX: -6,
+        style: {
+          fontSize: "10px",
+          fontWeight: 400,
+          colors: ["#000"],
+        },
+        formatter: (val: any) => this.common.formatBigNumber(+val)
       },
-      colors: colors,
-      grid: {
-        borderColor: "#f1f1f1",
+      stroke: {
+        show: true,
+        width: 1,
+        colors: ["#fff"],
+      },
+      tooltip: {
+        shared: true,
+        intersect: false,
+        y: {
+          formatter: (val: any) => this.common.getRupiahFormat(+val)
+        },
       },
       xaxis: {
         categories: this.sectionBudgetData.categories,
@@ -397,25 +503,13 @@ export class DashboardComponent {
       },
       yaxis: {
         labels: {
-          show: true,
-          formatter: (val: any) => "aaaa"
+          style: {
+            fontWeight: "bold",
+          }
         }
       },
-      tooltip: {
-        x: {
-          show: true,
-          title: {
-            formatter: (val: any) => "Title"
-          }
-        },
-        y: {
-          show: true,
-          title: {
-            formatter: (val: any) => "Title"
-          }
-        }
-      }
-    }
+      colors: colors,
+    };
   }
 
   private _totalLineBudgetDonutChart(colors: any) {
@@ -495,43 +589,26 @@ export class DashboardComponent {
           show: false,
         },
       },
-      colors: colors
+      colors: colors,
+      dataLabels: {
+        enabled: false
+      },
+      tooltip: {
+        x: {
+          show: true,
+          formatter: (val: any, opt: any) => `${this.supplyBudgetData.rawData![opt.dataPointIndex].section}`
+        },
+        y: {
+          formatter: (val: any, opt: any) => this.common.getRupiahFormat(+val)
+        },
+      },
     };
   }
 
   private _sectionBudgetMonthHeatmapChart(colors: any) {
     colors = this.getChartColorsArray(colors);
     this.sectionBudgetMonthHeatmapChart = {
-      series: [
-        {
-          name: "Preparation",
-          data: this.generateData(12, {
-            min: 0,
-            max: 90,
-          }),
-        },
-        {
-          name: "Packing",
-          data: this.generateData(12, {
-            min: 0,
-            max: 90,
-          }),
-        },
-        {
-          name: "Blow",
-          data: this.generateData(12, {
-            min: 0,
-            max: 90,
-          }),
-        },
-        {
-          name: "Filling",
-          data: this.generateData(12, {
-            min: 0,
-            max: 90,
-          }),
-        }
-      ],
+      series: this.sectionBudgetMonthHeatmapData.series,
       chart: {
         height: 450,
         type: "heatmap",
@@ -544,7 +621,24 @@ export class DashboardComponent {
       },
       colors: [colors[0]],
       stroke: {
-        colors: [colors[1]]
+        width: 0.5,
+        colors: ["#009176"]
+      },
+      tooltip: {
+        x: {
+          show: true,
+          formatter: (val: any, opt: any) => `${this.common.getMonthName(+opt.dataPointIndex + 1)}`
+        },
+        y: {
+          formatter: (val: any) => this.common.getRupiahFormat(+val)
+        }
+      },
+      yaxis: {
+        labels: {
+          style: {
+            fontWeight: "bold",
+          }
+        }
       }
     };
   }
@@ -553,17 +647,13 @@ export class DashboardComponent {
     colors = this.getChartColorsArray(colors);
     this.sectionBudgetMonthColumnChart = {
       series: [{
-        name: "Budget Plan",
-        data: [467382983, 578728398, 598232891, 548384938, 628238278, 577287388, 629829104, 602928170, 983283948, 427382910, 283912837, 328371823],
+        name: "Budget",
+        data: this.sectionBudgetMonthColumnData.series,
       },
       // {
       //   name: "Actual",
       //   data: [467329839, 578728928, 582372891, 549838498, 628738278, 572847388, 629382104, 602328170, 923283948, 429382910, 223912837, 328371423],
       // },
-        // {
-        //     name: "Actual",
-        //     data: [74, 83, 102, 97, 86, 106, 93, 114],
-        // }
       ],
       chart: {
         height: 350,
@@ -576,10 +666,21 @@ export class DashboardComponent {
         bar: {
           horizontal: false,
           columnWidth: "45%",
+          dataLabels: {
+            position: 'top'
+          }
         },
       },
       dataLabels: {
-        enabled: false,
+        enabled: true,
+        textAnchor: 'middle',
+        offsetY: -20,
+        style: {
+          fontWeight: 400,
+          fontSize: "10px",
+          colors: ["#000"],
+        },
+        formatter: (val: any) => this.common.formatBigNumber(+val)
       },
       stroke: {
         show: true,
@@ -588,15 +689,16 @@ export class DashboardComponent {
       },
       colors: colors,
       xaxis: {
-        categories: [
-          "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-        ],
+        categories: this.sectionBudgetMonthColumnData.categories,
       },
       yaxis: {
         title: {
           text: "Rp (Rupiah)",
         },
+        labels: {
+          show: true,
+          formatter: (val: any) => this.common.formatBigNumber(+val)
+        }
       },
       grid: {
         borderColor: "#f1f1f1",
@@ -605,29 +707,13 @@ export class DashboardComponent {
         opacity: 1,
       },
       tooltip: {
+        x: {
+          formatter: (val: any, opt: any) => `${this.common.getMonthName(this.sectionBudgetMonthColumnData.rawData![opt.dataPointIndex].month)}`
+        },
         y: {
           formatter: (val: any) => this.common.getRupiahFormat(+val)
         },
       },
     };
-  }
-
-  private generateData(count: number, yrange: { max: number; min: number; }) {
-    var i = 0;
-    var series = [];
-    while (i < count) {
-      var month = this.common.getSimpleMonthName(i + 1);
-      var budget =
-        Math.floor(Math.random() * (yrange.max - yrange.min + 1)) + yrange.min;
-
-      series.push({
-        x: month,
-        y: budget
-      });
-      i++;
-    }
-    console.log(series);
-    
-    return series;
   }
 }

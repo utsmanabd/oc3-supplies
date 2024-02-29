@@ -16,7 +16,7 @@ export class CommonService {
     const thousand = numberPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     const formatResult = thousand + ',' + decimalPart;
   
-    return 'Rp ' + formatResult;
+    return 'Rp' + formatResult;
   }
 
   formatDecimal(number: number, decimalFixed: number = 2): string {

@@ -1,3 +1,4 @@
+<ngx-loading [show]="isLoading"></ngx-loading>
 <div class="row mb-4">
     <div class="d-flex align-items-center">
         <h3 class="mb-0 flex-grow-1">Dashboard</h3>
@@ -84,9 +85,9 @@
             </div><!-- end card -->
         </div>
     </div>
-    <div class="row" *ngIf="lineData.length > 0">
+    <div #line class="row" *ngIf="lineData.length > 0">
         <div class="col">
-            <div class="card p-3">
+            <div class="card bg-light p-3">
                 <div class="card-header border-bottom-dashed align-items-center d-flex">
                     <h4 class="mb-0 flex-grow-1">Line: <span class="text-primary">{{ selectedLine.name }}</span></h4>
                     <div>
@@ -113,11 +114,9 @@
                                     <h4 class="card-title mb-0">Section Budget</h4>
                                 </div>
                                 <div class="card-body">
-                                    <apx-chart [series]="sectionBudgetBarChart.series" [chart]="sectionBudgetBarChart.chart"
-                                        [dataLabels]="sectionBudgetBarChart.dataLabels"
-                                        [plotOptions]="sectionBudgetBarChart.plotOptions"
-                                        [xaxis]="sectionBudgetBarChart.xaxis" [colors]="sectionBudgetBarChart.colors"
-                                        dir="ltr"></apx-chart>
+                                        <apx-chart [series]="sectionBudgetBarChart.series" [chart]="sectionBudgetBarChart.chart" [tooltip]="sectionBudgetBarChart.tooltip"
+                                        [dataLabels]="sectionBudgetBarChart.dataLabels" [plotOptions]="sectionBudgetBarChart.plotOptions" [yaxis]="sectionBudgetBarChart.yaxis"
+                                        [xaxis]="sectionBudgetBarChart.xaxis" [stroke]="sectionBudgetBarChart.stroke" [colors]="sectionBudgetBarChart.colors" dir="ltr"></apx-chart>
                                 </div>
                             </div>
                         </div>
@@ -142,11 +141,15 @@
                         <div class="col-12" *ngIf="supplyBudgetTreemapChart && supplyBudgetData.rawData?.length != 0">
                             <div class="card">
                                 <div class="card-header border-bottom-dashed align-items-center d-flex">
-                                    <h4 class="card-title mb-0">Supplies Budget Value</h4>
+                                    <h4 class="card-title mb-0 flex-grow-1">Supplies Budget Value</h4>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="showLabels" (change)="onTreemapShowLabels($event)">
+                                        <label class="form-check-label" for="showLabels">Show Labels</label>
+                                    </div>
                                 </div>
                                 <div class="card-body">
                                     <apx-chart [series]="supplyBudgetTreemapChart.series"
-                                        [chart]="supplyBudgetTreemapChart.chart"
+                                        [chart]="supplyBudgetTreemapChart.chart" [tooltip]="supplyBudgetTreemapChart.tooltip"
                                         [dataLabels]="supplyBudgetTreemapChart.dataLabels"
                                         [plotOptions]="supplyBudgetTreemapChart.plotOptions"
                                         [title]="supplyBudgetTreemapChart.title" [legend]="supplyBudgetTreemapChart.legend"
@@ -160,7 +163,7 @@
                                 <div class="card-header border-bottom-dashed align-items-center d-flex">
                                     <h4 class="card-title mb-0">Top 5 Biggest Supply Budgets</h4>
                                 </div>
-                                <div class="card-body">
+                                <div class="card-body table-responsive">
                                     <!-- Striped Rows -->
                                     <table class="table table-striped">
                                         <thead>
@@ -171,54 +174,15 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr>
-                                                <th scope="row">1</th>
+                                            <tr *ngFor="let data of fiveBiggestBudget; let i = index">
+                                                <th scope="row">{{ i + 1 }}</th>
                                                 <td>
                                                     <div class="fs-6">
-                                                        <a class="text-reset">Black Alcohol</a>
+                                                        <a class="text-reset">{{ data.material_desc }}</a>
                                                     </div>
-                                                    <span class="fs-12 text-muted">BLOW</span>
+                                                    <span class="fs-12 text-muted">{{ data.section }}</span>
                                                 </td>
-                                                <td>{{ common.getRupiahFormat(123230291) }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">2</th>
-                                                <td>
-                                                    <div class="fs-6">
-                                                        <a class="text-reset">Black Alcohol</a>
-                                                    </div>
-                                                    <span class="fs-12 text-muted">BLOW</span>
-                                                </td>
-                                                <td>{{ common.getRupiahFormat(123230291) }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">3</th>
-                                                <td>
-                                                    <div class="fs-6">
-                                                        <a class="text-reset">Black Alcohol</a>
-                                                    </div>
-                                                    <span class="fs-12 text-muted">BLOW</span>
-                                                </td>
-                                                <td>{{ common.getRupiahFormat(123230291) }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th scope="row">4</th>
-                                                <td>
-                                                    <div class="fs-6">
-                                                        <a class="text-reset">Black Alcohol</a>
-                                                    </div>
-                                                    <span class="fs-12 text-muted">BLOW</span>
-                                                </td>
-                                                <td>{{ common.getRupiahFormat(123230291) }}</td>
-                                            <tr>
-                                                <th scope="row">5</th>
-                                                <td>
-                                                    <div class="fs-6">
-                                                        <a class="text-reset">Black Alcohol</a>
-                                                    </div>
-                                                    <span class="fs-12 text-muted">BLOW</span>
-                                                </td>
-                                                <td>{{ common.getRupiahFormat(123230291) }}</td>
+                                                <td>{{ common.getRupiahFormat(data.price) }}</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -236,6 +200,8 @@
                                             [chart]="sectionBudgetMonthHeatmapChart.chart"
                                             [dataLabels]="sectionBudgetMonthHeatmapChart.dataLabels"
                                             [title]="sectionBudgetMonthHeatmapChart.title"
+                                            [tooltip]="sectionBudgetMonthHeatmapChart.tooltip"
+                                            [yaxis]="sectionBudgetMonthHeatmapChart.yaxis"
                                             [colors]="sectionBudgetMonthHeatmapChart.colors"
                                             [stroke]="sectionBudgetMonthHeatmapChart.stroke" dir="ltr"></apx-chart>
                                     </div>
@@ -243,25 +209,21 @@
                             </div>
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="row" #section>
                         <div class="col-12">
                             <div class="card">
                                 <div class="card-header border-bottom-dashed align-items-center d-flex">
-                                    <h5 class="mb-0 flex-grow-1">Section: <span class="text-success">{{ 'Preparation'
-                                            }}</span></h5>
+                                    <h5 class="mb-0 flex-grow-1">Section: <span class="text-success">{{ selectedSection.name }}</span></h5>
                                     <div>
                                         <div class="dropdown" ngbDropdown>
-                                            <button class="btn btn-soft-secondary btn-sm arrow-none"
+                                            <button class="btn btn-soft-success btn-sm arrow-none"
                                                 href="javascript:void(0);" data-bs-toggle="dropdown" aria-haspopup="true"
                                                 aria-expanded="false" ngbDropdownToggle>
-                                                <span class="text-uppercase">preparation<i
+                                                <span class="text-uppercase">{{ selectedSection.name }}<i
                                                         class="mdi mdi-chevron-down align-middle ms-1"></i></span>
                                             </button>
                                             <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
-                                                <a class="dropdown-item" href="javascript:void(0);">Preparation</a>
-                                                <a class="dropdown-item" href="javascript:void(0);">Filling</a>
-                                                <a class="dropdown-item" href="javascript:void(0);">Blow</a>
-                                                <a class="dropdown-item" href="javascript:void(0);">Packing</a>
+                                                <a *ngFor="let data of sectionData" (click)="onSectionChange(data)" class="dropdown-item" href="javascript:void(0);">{{ data.section }}</a>
                                             </div>
                                         </div>
                                     </div>
