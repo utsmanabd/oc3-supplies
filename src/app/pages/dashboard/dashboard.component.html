@@ -1,265 +1,282 @@
 <ngx-loading [show]="isLoading"></ngx-loading>
-<div class="row mb-4">
-    <div class="d-flex align-items-center">
-        <h3 class="mb-0 flex-grow-1">Dashboard</h3>
-        <div>
-            <div class="input-group">
-                <button class="btn btn-sm btn-primary" (click)="onButtonChangeYear('prev')" type="button">
-                    <i class="ri ri-arrow-left-line"></i>
-                </button>
-                <input type="number" (change)="onYearChange($event)" class="form-control" [(ngModel)]="year" />
-                <button class="btn btn-sm btn-primary" (click)="onButtonChangeYear('next')" type="button">
-                    <i class="ri ri-arrow-right-line"></i>
-                </button>
-            </div>
+<div class="row mb-4 g-4 d-flex justify-content-between align-items-center">
+    <div class="col-sm-auto">
+        <div class="d-flex gap-1">
+            <h3 class="mb-0">Dashboard</h3>
+        </div>
+        
+    </div>
+    
+    <div class="col-sm-auto">
+        <div class="input-group">
+            <button class="btn btn-sm btn-primary" (click)="onButtonChangeYear('prev')" type="button">
+                <i class="ri ri-arrow-left-line"></i>
+            </button>
+            <input type="number" (change)="onYearChange($event)" class="form-control" [(ngModel)]="year" />
+            <button class="btn btn-sm btn-primary" (click)="onButtonChangeYear('next')" type="button">
+                <i class="ri ri-arrow-right-line"></i>
+            </button>
         </div>
     </div>
 </div>
-<ng-container *ngIf="factoryLineBudgetColumnChart && factoryLineBudgetData.rawData?.length != 0">
-    <div class="row">
-        <div class="col-md-6 col-sm-12">
-            <div class="card card-animate bg-primary">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <p class="text-uppercase fw-semibold text-white-50 mb-0">Total Budget</p>
+<div *ngIf="isBudgetNotEmpty;else emptyDashboard">
+    <ng-container *ngIf="factoryLineBudgetColumnChart && factoryLineBudgetData.rawData?.length != 0">
+        <div class="row">
+            <div class="col-md-6 col-sm-12">
+                <div class="card card-animate bg-primary">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="text-uppercase fw-semibold text-white-50 mb-0">Total Budget</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="d-flex align-items-end justify-content-between mt-4">
+                        <div class="d-flex align-items-end justify-content-between mt-4">
+                            <div>
+                                <h4 class="fs-22 fw-semibold ff-secondary mb-4 text-white">
+                                    <span class="counter-value">{{ common.getRupiahFormat(totalFactoryBudget) }}</span>
+                                </h4>
+                                <a class="text-decoration-underline text-white-50">See details</a>
+                            </div>
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title bg-soft-light rounded fs-3 shadow">
+                                    <i class="ri ri-money-dollar-circle-fill text-light"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div><!-- end card body -->
+                </div><!-- end card -->
+            </div>
+            <div class="col-md-6 col-sm-12">
+                <div class="card card-animate bg-success">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="text-uppercase fw-semibold text-white-50 mb-0">Total Actual</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-end justify-content-between mt-4">
+                            <div>
+                                <h4 class="fs-22 fw-semibold ff-secondary mb-4 text-white">
+                                    <span class="counter-value">{{ common.getRupiahFormat(totalFactoryActual) }}</span>
+                                </h4>
+                                <a class="text-decoration-underline text-white-50">See details</a>
+                            </div>
+                            <div class="avatar-sm flex-shrink-0">
+                                <span class="avatar-title bg-soft-light rounded fs-3 shadow">
+                                    <i class="ri ri-exchange-dollar-fill text-light"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div><!-- end card body -->
+                </div><!-- end card -->
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title mb-0">Factory Line Budget</h4>
+                    </div><!-- end card header -->
+        
+                    <div class="card-body">
+                        <apx-chart [series]="factoryLineBudgetColumnChart.series" [chart]="factoryLineBudgetColumnChart.chart"
+                            [dataLabels]="factoryLineBudgetColumnChart.dataLabels"
+                            [plotOptions]="factoryLineBudgetColumnChart.plotOptions"
+                            [yaxis]="factoryLineBudgetColumnChart.yaxis" [legend]="factoryLineBudgetColumnChart.legend"
+                            [fill]="factoryLineBudgetColumnChart.fill" [stroke]="factoryLineBudgetColumnChart.stroke"
+                            [tooltip]="factoryLineBudgetColumnChart.tooltip" [xaxis]="factoryLineBudgetColumnChart.xaxis"
+                            [colors]="factoryLineBudgetColumnChart.colors" dir="ltr"></apx-chart>
+                    </div><!-- end card-body -->
+                </div><!-- end card -->
+            </div>
+        </div>
+        <div #line class="row" *ngIf="lineData.length > 0">
+            <div class="col">
+                <div class="card bg-light p-3">
+                    <div class="card-header border-bottom-dashed align-items-center d-flex">
+                        <h4 class="mb-0 flex-grow-1">Line: <span class="text-primary">{{ selectedLine.name }}</span></h4>
                         <div>
-                            <h4 class="fs-22 fw-semibold ff-secondary mb-4 text-white">
-                                <span class="counter-value">{{ common.getRupiahFormat(totalFactoryBudget) }}</span>
-                            </h4>
-                            <a class="text-decoration-underline text-white-50">See details</a>
-                        </div>
-                        <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-soft-light rounded fs-3 shadow">
-                                <i class="ri ri-money-dollar-circle-fill text-light"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div><!-- end card body -->
-            </div><!-- end card -->
-        </div>
-        <div class="col-md-6 col-sm-12">
-            <div class="card card-animate bg-success">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <p class="text-uppercase fw-semibold text-white-50 mb-0">Total Actual</p>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-end justify-content-between mt-4">
-                        <div>
-                            <h4 class="fs-22 fw-semibold ff-secondary mb-4 text-white">
-                                <span class="counter-value">{{ common.getRupiahFormat(totalFactoryActual) }}</span>
-                            </h4>
-                            <a class="text-decoration-underline text-white-50">See details</a>
-                        </div>
-                        <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-soft-light rounded fs-3 shadow">
-                                <i class="ri ri-exchange-dollar-fill text-light"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div><!-- end card body -->
-            </div><!-- end card -->
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title mb-0">Factory Line Budget</h4>
-                </div><!-- end card header -->
-    
-                <div class="card-body">
-                    <apx-chart [series]="factoryLineBudgetColumnChart.series" [chart]="factoryLineBudgetColumnChart.chart"
-                        [dataLabels]="factoryLineBudgetColumnChart.dataLabels"
-                        [plotOptions]="factoryLineBudgetColumnChart.plotOptions"
-                        [yaxis]="factoryLineBudgetColumnChart.yaxis" [legend]="factoryLineBudgetColumnChart.legend"
-                        [fill]="factoryLineBudgetColumnChart.fill" [stroke]="factoryLineBudgetColumnChart.stroke"
-                        [tooltip]="factoryLineBudgetColumnChart.tooltip" [xaxis]="factoryLineBudgetColumnChart.xaxis"
-                        [colors]="factoryLineBudgetColumnChart.colors" dir="ltr"></apx-chart>
-                </div><!-- end card-body -->
-            </div><!-- end card -->
-        </div>
-    </div>
-    <div #line class="row" *ngIf="lineData.length > 0">
-        <div class="col">
-            <div class="card bg-light p-3">
-                <div class="card-header border-bottom-dashed align-items-center d-flex">
-                    <h4 class="mb-0 flex-grow-1">Line: <span class="text-primary">{{ selectedLine.name }}</span></h4>
-                    <div>
-                        <div class="dropdown" ngbDropdown>
-                            <button class="btn btn-soft-primary btn-sm arrow-none" href="javascript:void(0);"
-                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" ngbDropdownToggle>
-                                <span class="text-uppercase">{{ selectedLine.name }}<i
-                                        class="mdi mdi-chevron-down align-middle ms-1"></i></span>
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
-                                <a *ngFor="let item of lineData" class="dropdown-item" (click)="onFactoryLineChange($event)" href="javascript:void(0);" [id]="jsonToString(item)">{{ item.line }}</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body bg-soft-light">
-                    <!-- <div class="row g-0 text-center shadow-sm p-1" style="border-radius: 4px;">
-    
-                    </div> -->
-                    <div class="row">
-                        <div class="col-xl-8" *ngIf="sectionBudgetBarChart && sectionBudgetData.rawData?.length != 0">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h4 class="card-title mb-0">Section Budget</h4>
-                                </div>
-                                <div class="card-body">
-                                        <apx-chart [series]="sectionBudgetBarChart.series" [chart]="sectionBudgetBarChart.chart" [tooltip]="sectionBudgetBarChart.tooltip"
-                                        [dataLabels]="sectionBudgetBarChart.dataLabels" [plotOptions]="sectionBudgetBarChart.plotOptions" [yaxis]="sectionBudgetBarChart.yaxis"
-                                        [xaxis]="sectionBudgetBarChart.xaxis" [stroke]="sectionBudgetBarChart.stroke" [colors]="sectionBudgetBarChart.colors" dir="ltr"></apx-chart>
+                            <div class="dropdown" ngbDropdown>
+                                <button class="btn btn-soft-primary btn-sm arrow-none" href="javascript:void(0);"
+                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" ngbDropdownToggle>
+                                    <span class="text-uppercase">{{ selectedLine.name }}<i
+                                            class="mdi mdi-chevron-down align-middle ms-1"></i></span>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
+                                    <a *ngFor="let item of lineData" class="dropdown-item" (click)="onFactoryLineChange($event)" href="javascript:void(0);" [id]="jsonToString(item)">{{ item.line }}</a>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-xl-4">
-                            <div class="card">
-                                <div class="card-header border-bottom-dashed align-items-center d-flex">
-                                    <h4 class="card-title mb-0">Line Total Value</h4>
-                                </div>
-                                <div class="card-body">
-                                    <apx-chart [series]="totalLineBudgetDonutChart.series"
-                                        [labels]="totalLineBudgetDonutChart.labels"
-                                        [chart]="totalLineBudgetDonutChart.chart"
-                                        [plotOptions]="totalLineBudgetDonutChart.plotOptions"
-                                        [dataLabels]="totalLineBudgetDonutChart.dataLabels"
-                                        [legend]="totalLineBudgetDonutChart.legend"
-                                        [stroke]="totalLineBudgetDonutChart.stroke"
-                                        [yaxis]="totalLineBudgetDonutChart.yaxis"
-                                        [colors]="totalLineBudgetDonutChart.colors" dir="ltr"></apx-chart>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12" *ngIf="supplyBudgetTreemapChart && supplyBudgetData.rawData?.length != 0">
-                            <div class="card">
-                                <div class="card-header border-bottom-dashed align-items-center d-flex">
-                                    <h4 class="card-title mb-0 flex-grow-1">Supplies Budget Value</h4>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="showLabels" (change)="onTreemapShowLabels($event)">
-                                        <label class="form-check-label" for="showLabels">Show Labels</label>
+                    </div>
+                    <div class="card-body bg-soft-light">
+                        <!-- <div class="row g-0 text-center shadow-sm p-1" style="border-radius: 4px;">
+        
+                        </div> -->
+                        <div class="row">
+                            <div class="col-xl-8" *ngIf="sectionBudgetBarChart && sectionBudgetData.rawData?.length != 0">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4 class="card-title mb-0">Section Budget</h4>
                                     </div>
-                                </div>
-                                <div class="card-body">
-                                    <apx-chart [series]="supplyBudgetTreemapChart.series"
-                                        [chart]="supplyBudgetTreemapChart.chart" [tooltip]="supplyBudgetTreemapChart.tooltip"
-                                        [dataLabels]="supplyBudgetTreemapChart.dataLabels"
-                                        [plotOptions]="supplyBudgetTreemapChart.plotOptions"
-                                        [title]="supplyBudgetTreemapChart.title" [legend]="supplyBudgetTreemapChart.legend"
-                                        [colors]="supplyBudgetTreemapChart.colors" dir="ltr"></apx-chart>
-                                </div>
-    
-                            </div><!-- end card -->
-                        </div>
-                        <div class="col-xl-4">
-                            <div class="card">
-                                <div class="card-header border-bottom-dashed align-items-center d-flex">
-                                    <h4 class="card-title mb-0">Top 5 Biggest Supply Budgets</h4>
-                                </div>
-                                <div class="card-body table-responsive">
-                                    <!-- Striped Rows -->
-                                    <table class="table table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th scope="col">#</th>
-                                                <th scope="col">Material</th>
-                                                <th scope="col">Price</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr *ngFor="let data of fiveBiggestBudget; let i = index">
-                                                <th scope="row">{{ i + 1 }}</th>
-                                                <td>
-                                                    <div class="fs-6">
-                                                        <a class="text-reset">{{ data.material_desc }}</a>
-                                                    </div>
-                                                    <span class="fs-12 text-muted">{{ data.section }}</span>
-                                                </td>
-                                                <td>{{ common.getRupiahFormat(data.price) }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-8">
-                            <div class="card">
-                                <div class="card-header border-bottom-dashed align-items-center d-flex">
-                                    <h4 class="card-title mb-0">Section Budget by Month</h4>
-                                </div>
-                                <div class="card-body">
-                                    <div class="live-preview">
-                                        <apx-chart [series]="sectionBudgetMonthHeatmapChart.series"
-                                            [chart]="sectionBudgetMonthHeatmapChart.chart"
-                                            [dataLabels]="sectionBudgetMonthHeatmapChart.dataLabels"
-                                            [title]="sectionBudgetMonthHeatmapChart.title"
-                                            [tooltip]="sectionBudgetMonthHeatmapChart.tooltip"
-                                            [yaxis]="sectionBudgetMonthHeatmapChart.yaxis"
-                                            [colors]="sectionBudgetMonthHeatmapChart.colors"
-                                            [stroke]="sectionBudgetMonthHeatmapChart.stroke" dir="ltr"></apx-chart>
+                                    <div class="card-body">
+                                            <apx-chart [series]="sectionBudgetBarChart.series" [chart]="sectionBudgetBarChart.chart" [tooltip]="sectionBudgetBarChart.tooltip"
+                                            [dataLabels]="sectionBudgetBarChart.dataLabels" [plotOptions]="sectionBudgetBarChart.plotOptions" [yaxis]="sectionBudgetBarChart.yaxis"
+                                            [xaxis]="sectionBudgetBarChart.xaxis" [stroke]="sectionBudgetBarChart.stroke" [colors]="sectionBudgetBarChart.colors" dir="ltr"></apx-chart>
                                     </div>
                                 </div>
                             </div>
+                            <div class="col-xl-4">
+                                <div class="card">
+                                    <div class="card-header border-bottom-dashed align-items-center d-flex">
+                                        <h4 class="card-title mb-0">Line Total Value</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <apx-chart [series]="totalLineBudgetDonutChart.series"
+                                            [labels]="totalLineBudgetDonutChart.labels"
+                                            [chart]="totalLineBudgetDonutChart.chart"
+                                            [plotOptions]="totalLineBudgetDonutChart.plotOptions"
+                                            [dataLabels]="totalLineBudgetDonutChart.dataLabels"
+                                            [legend]="totalLineBudgetDonutChart.legend"
+                                            [stroke]="totalLineBudgetDonutChart.stroke"
+                                            [yaxis]="totalLineBudgetDonutChart.yaxis"
+                                            [colors]="totalLineBudgetDonutChart.colors" dir="ltr"></apx-chart>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12" *ngIf="supplyBudgetTreemapChart && supplyBudgetData.rawData?.length != 0">
+                                <div class="card">
+                                    <div class="card-header border-bottom-dashed align-items-center d-flex">
+                                        <h4 class="card-title mb-0 flex-grow-1">Supplies Budget Value</h4>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="showLabels" (change)="onTreemapShowLabels($event)">
+                                            <label class="form-check-label" for="showLabels">Show Labels</label>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <apx-chart [series]="supplyBudgetTreemapChart.series"
+                                            [chart]="supplyBudgetTreemapChart.chart" [tooltip]="supplyBudgetTreemapChart.tooltip"
+                                            [dataLabels]="supplyBudgetTreemapChart.dataLabels"
+                                            [plotOptions]="supplyBudgetTreemapChart.plotOptions"
+                                            [title]="supplyBudgetTreemapChart.title" [legend]="supplyBudgetTreemapChart.legend"
+                                            [colors]="supplyBudgetTreemapChart.colors" dir="ltr"></apx-chart>
+                                    </div>
+        
+                                </div><!-- end card -->
+                            </div>
+                            <div class="col-xl-4">
+                                <div class="card">
+                                    <div class="card-header border-bottom-dashed align-items-center d-flex">
+                                        <h4 class="card-title mb-0">Top 5 Biggest Supply Budgets</h4>
+                                    </div>
+                                    <div class="card-body table-responsive">
+                                        <!-- Striped Rows -->
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">#</th>
+                                                    <th scope="col">Material</th>
+                                                    <th scope="col">Price</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let data of fiveBiggestBudget; let i = index">
+                                                    <th scope="row">{{ i + 1 }}</th>
+                                                    <td>
+                                                        <div class="fs-6">
+                                                            <a class="text-reset">{{ data.material_desc }}</a>
+                                                        </div>
+                                                        <span class="fs-12 text-muted">{{ data.section }}</span>
+                                                    </td>
+                                                    <td>{{ common.getRupiahFormat(data.price) }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-8">
+                                <div class="card">
+                                    <div class="card-header border-bottom-dashed align-items-center d-flex">
+                                        <h4 class="card-title mb-0">Section Budget by Month</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="live-preview">
+                                            <apx-chart [series]="sectionBudgetMonthHeatmapChart.series"
+                                                [chart]="sectionBudgetMonthHeatmapChart.chart"
+                                                [dataLabels]="sectionBudgetMonthHeatmapChart.dataLabels"
+                                                [title]="sectionBudgetMonthHeatmapChart.title"
+                                                [tooltip]="sectionBudgetMonthHeatmapChart.tooltip"
+                                                [yaxis]="sectionBudgetMonthHeatmapChart.yaxis"
+                                                [colors]="sectionBudgetMonthHeatmapChart.colors"
+                                                [stroke]="sectionBudgetMonthHeatmapChart.stroke" dir="ltr"></apx-chart>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="row" #section>
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header border-bottom-dashed align-items-center d-flex">
-                                    <h5 class="mb-0 flex-grow-1">Section: <span class="text-success">{{ selectedSection.name }}</span></h5>
-                                    <div>
-                                        <div class="dropdown" ngbDropdown>
-                                            <button class="btn btn-soft-success btn-sm arrow-none"
-                                                href="javascript:void(0);" data-bs-toggle="dropdown" aria-haspopup="true"
-                                                aria-expanded="false" ngbDropdownToggle>
-                                                <span class="text-uppercase">{{ selectedSection.name }}<i
-                                                        class="mdi mdi-chevron-down align-middle ms-1"></i></span>
-                                            </button>
-                                            <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
-                                                <a *ngFor="let data of sectionData" (click)="onSectionChange(data)" class="dropdown-item" href="javascript:void(0);">{{ data.section }}</a>
+                        <div class="row" #section>
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header border-bottom-dashed align-items-center d-flex">
+                                        <h5 class="mb-0 flex-grow-1">Section: <span class="text-success">{{ selectedSection.name }}</span></h5>
+                                        <div>
+                                            <div class="dropdown" ngbDropdown>
+                                                <button class="btn btn-soft-success btn-sm arrow-none"
+                                                    href="javascript:void(0);" data-bs-toggle="dropdown" aria-haspopup="true"
+                                                    aria-expanded="false" ngbDropdownToggle>
+                                                    <span class="text-uppercase">{{ selectedSection.name }}<i
+                                                            class="mdi mdi-chevron-down align-middle ms-1"></i></span>
+                                                </button>
+                                                <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
+                                                    <a *ngFor="let data of sectionData" (click)="onSectionChange(data)" class="dropdown-item" href="javascript:void(0);">{{ data.section }}</a>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-12">
-                                            <div class="card">
-                                                <div class="card-header">
-                                                    <h4 class="card-title mb-0">Budget by Month</h4>
-                                                </div><!-- end card header -->
-    
-                                                <div class="card-body">
-                                                    <apx-chart [series]="sectionBudgetMonthColumnChart.series"
-                                                        [chart]="sectionBudgetMonthColumnChart.chart"
-                                                        [dataLabels]="sectionBudgetMonthColumnChart.dataLabels"
-                                                        [plotOptions]="sectionBudgetMonthColumnChart.plotOptions"
-                                                        [yaxis]="sectionBudgetMonthColumnChart.yaxis"
-                                                        [legend]="sectionBudgetMonthColumnChart.legend"
-                                                        [fill]="sectionBudgetMonthColumnChart.fill"
-                                                        [stroke]="sectionBudgetMonthColumnChart.stroke"
-                                                        [tooltip]="sectionBudgetMonthColumnChart.tooltip"
-                                                        [xaxis]="sectionBudgetMonthColumnChart.xaxis"
-                                                        [colors]="sectionBudgetMonthColumnChart.colors"
-                                                        dir="ltr"></apx-chart>
-                                                </div><!-- end card-body -->
-                                            </div><!-- end card -->
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <div class="card">
+                                                    <div class="card-header">
+                                                        <h4 class="card-title mb-0">Budget by Month</h4>
+                                                    </div><!-- end card header -->
+        
+                                                    <div class="card-body">
+                                                        <apx-chart [series]="sectionBudgetMonthColumnChart.series"
+                                                            [chart]="sectionBudgetMonthColumnChart.chart"
+                                                            [dataLabels]="sectionBudgetMonthColumnChart.dataLabels"
+                                                            [plotOptions]="sectionBudgetMonthColumnChart.plotOptions"
+                                                            [yaxis]="sectionBudgetMonthColumnChart.yaxis"
+                                                            [legend]="sectionBudgetMonthColumnChart.legend"
+                                                            [fill]="sectionBudgetMonthColumnChart.fill"
+                                                            [stroke]="sectionBudgetMonthColumnChart.stroke"
+                                                            [tooltip]="sectionBudgetMonthColumnChart.tooltip"
+                                                            [xaxis]="sectionBudgetMonthColumnChart.xaxis"
+                                                            [colors]="sectionBudgetMonthColumnChart.colors"
+                                                            dir="ltr"></apx-chart>
+                                                    </div><!-- end card-body -->
+                                                </div><!-- end card -->
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-    
-                            </div><!-- end card -->
-                        </div><!-- end col -->
+        
+                                </div><!-- end card -->
+                            </div><!-- end col -->
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+    </ng-container>
+</div>
+
+<ng-template #emptyDashboard>
+    <div class="card table-responsive p-3">
+        <div class="text-center mt-3">
+            <h4 class="card-title">Budgeting supplies data in {{ year }} is empty</h4>
+        </div>
+        <div class="d-flex justify-content-center">
+            <img src="assets/images/file.png" alt="no-finding" height="300">
+        </div>
     </div>
-</ng-container>
+</ng-template>

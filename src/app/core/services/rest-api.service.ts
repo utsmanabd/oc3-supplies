@@ -276,4 +276,17 @@ export class restApiService {
     return this.requestHttpGet(`dashboard/month-by-section?year=${year}&lineId=${lineId}&costCenterId=${costCenterId}`)
   }
 
+  // Actual
+  getActualPerLine(year: number) {
+    return this.requestHttpGet(`actual/line-by-year?year=${year}`)
+  }
+  
+  getActualPerSection(year: number, lineId: number) {
+    return this.requestHttpGet(`actual/section-by-line?year=${year}&lineId=${lineId}`)
+  }
+
+  getActualPerSectionAndMonth(year: number, lineId: number) {
+    return this.requestHttpGet(`actual/sectionmonth-by-line?year=${year}&lineId=${lineId}`)
+  }
+
 }
