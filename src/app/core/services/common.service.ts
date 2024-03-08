@@ -9,6 +9,11 @@ export class CommonService {
 
   constructor() { }
 
+  // -- Object manipulation
+  jsonToString(data: any): string {
+    return JSON.stringify(data)
+  }
+
   // -- Number format
   getRupiahFormat(number: number): string {
     const formattedNumber = number.toFixed(2);

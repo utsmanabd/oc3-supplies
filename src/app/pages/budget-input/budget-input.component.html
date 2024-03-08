@@ -26,7 +26,7 @@
     <div class="row g-4">
       <div class="col-sm-auto">
         <div class="d-flex gap-1">
-          <button (click)="openUpdateModal(updateModal)" type="button" class="btn btn-primary add-btn" id="create-btn">
+          <button [disabled]="!isTabOpen.budgetPlan" (click)="openUpdateModal(updateModal)" type="button" class="btn btn-primary add-btn" id="create-btn">
             <i class="ri-add-line align-bottom me-1"></i> Add
           </button>
           <button class="btn btn-soft-danger" (click)="onDeleteSupplyBudget()"><i
@@ -59,23 +59,36 @@
       </div>
     </div>
   </div>
-  <div class="card-body table-responsive">
-    <div *ngIf="suppliesData.length > 0;else budgetingNotFound">
+  <div class="card-body">
+    <ul ngbNav #Animation="ngbNav" [activeId]="tabData[0].id" class="nav nav-pills animation-nav nav-justified gap-2 mb-3">
+      <li *ngFor="let tab of tabData" [ngbNavItem]="tab.id">
+          <a ngbNavLink [name]="common.jsonToString(tab)" (click)="onTabChange($event)">
+            {{ tab.name }}
+          </a>
+      </li>
+    </ul>
+    <div *ngIf="suppliesData.length > 0;else budgetingNotFound" class="table-responsive">
       <table class="table table-nowrap">
         <thead class="table-light">
-          <tr>
+          <tr *ngIf="isTabOpen.budgetPlan">
             <th scope="col">
               <div class="form-check">
                 <input (change)="onChecklistAll($event)" class="form-check-input" type="checkbox" value="0" id="check">
                 <label class="form-check-label" for="check"></label>
               </div>
             </th>
-            <th *ngFor="let col of tableColumns" scope="col">{{ col }}</th>
+            <th *ngFor="let col of budgetPlanTableCol" scope="col">{{ col }}</th>
+          </tr>
+          <tr *ngIf="isTabOpen.actual">
+            <th *ngFor="let col of budgetActualTableCol" scope="col">{{ col }}</th>
+          </tr>
+          <tr *ngIf="isTabOpen.comparison">
+            <th *ngFor="let col of comparisonTableCol" scope="col">{{ col }}</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let data of supplies(); let i = index">
-            <td>
+            <td *ngIf="isTabOpen.budgetPlan">
               <div class="form-check">
                 <input [(ngModel)]="data.is_selected" (change)="onCheckedSupplyBudget($event)" class="form-check-input"
                   name="check_{{data.budget_id}}" type="checkbox" value="{{ data.budget_id }}"
@@ -83,6 +96,7 @@
                 <label class="form-check-label" for="check_{{data.budget_id}}"></label>
               </div>
             </td>
+            <td *ngIf="!isTabOpen.budgetPlan">{{ i + 1 }}</td>
             <td>
               <div class="fs-6">
                 <a class="text-reset">{{ data.section }}</a>
@@ -91,17 +105,22 @@
             </td>
             <td>{{ data.material_code }}</td>
             <td>{{ data.material_desc }}</td>
-            <td>
+            <td *ngIf="isTabOpen.budgetPlan">
               <div class="fs-6">
                 <a class="text-reset">{{ data.calculation_by }}</a>
               </div>
               <span *ngIf="data.calculation_by == 'Prodplan'" class="fs-7 text-muted">(Per 1000 Btl)</span>
             </td>
             <td>{{ data.uom }}</td>
-            <td>{{ common.getRupiahFormat(data.average_price) }}</td>
-            <td>{{ common.replaceDotWithComma(data.bom) }}</td>
-            <td>{{ common.formatDecimal(common.sumElementFromArray(data.budgeting_data, "quantity")) }}</td>
-            <td>{{ common.getRupiahFormat(common.sumElementFromArray(data.budgeting_data, "price")) }}</td>
+            <td *ngIf="isTabOpen.budgetPlan">{{ common.getRupiahFormat(data.average_price) }}</td>
+            <td *ngIf="isTabOpen.budgetPlan">{{ common.replaceDotWithComma(data.bom) }}</td>
+            <td *ngIf="!isTabOpen.comparison">{{ common.formatDecimal(common.sumElementFromArray(data.budgeting_data, "quantity")) }}</td>
+            <td *ngIf="!isTabOpen.comparison">{{ common.getRupiahFormat(common.sumElementFromArray(data.budgeting_data, "price")) }}</td>
+            <td *ngIf="isTabOpen.comparison">{{ common.formatDecimal(common.sumElementFromArray(data.budgeting_data, "plan_qty")) }}</td>
+            <td *ngIf="isTabOpen.comparison">{{ common.formatDecimal(common.sumElementFromArray(data.budgeting_data, "actual_qty")) }}</td>
+            <td *ngIf="isTabOpen.comparison">{{ common.getRupiahFormat(common.sumElementFromArray(data.budgeting_data, "plan_price")) }}</td>
+            <td *ngIf="isTabOpen.comparison">{{ common.getRupiahFormat(common.sumElementFromArray(data.budgeting_data, "actual_price")) }}</td>
+            <td *ngIf="isTabOpen.comparison" class="text-success"><i class="ri ri-arrow-right-up fs-17 align-middle"></i> %25</td>
             <td>
               <div class="dropdown" ngbDropdown>
                 <a href="javascript:void(0);" class="arrow-none" role="button" id="dropdownMenuLink4"
@@ -112,9 +131,9 @@
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink4" ngbDropdownMenu>
                   <li><a class="dropdown-item" (click)="openDetailModal(detailModal, data)"
                       href="javascript:void(0);"><i class="ri ri-eye-line me-2"></i>Detail</a></li>
-                  <li><a class="dropdown-item" (click)="openUpdateModal(updateModal, data)"
+                  <li *ngIf="isTabOpen.budgetPlan"><a class="dropdown-item" (click)="openUpdateModal(updateModal, data)"
                       href="javascript:void(0);"><i class="ri ri-edit-2-line me-2"></i>Edit</a></li>
-                  <li><a class="dropdown-item" (click)="onDeleteSupplyBudget(data)"
+                  <li *ngIf="isTabOpen.budgetPlan"><a class="dropdown-item" (click)="onDeleteSupplyBudget(data)"
                       href="javascript:void(0);"><i class="ri ri-delete-bin-line me-2"></i>Delete</a></li>
                 </ul>
               </div>
@@ -122,13 +141,21 @@
           </tr>
         </tbody>
         <tfoot class="table-light">
-          <tr>
-            <td colspan="6">Total</td>
-            <td>{{ common.getRupiahFormat(common.sumElementFromArray(suppliesData, "average_price")) }}</td>
+          <tr *ngIf="isTabOpen.budgetPlan">
+            <td colspan="9">Total Price</td>
+            <td>{{ common.getRupiahFormat(planPrice) }}</td>
             <td></td>
-            <td>{{ common.formatDecimal(totalQuantity) }}</td>
-            <td>{{ common.getRupiahFormat(totalPrice) }}</td>
+          </tr>
+          <tr *ngIf="isTabOpen.actual">
+            <td colspan="6">Total Price</td>
+            <td>{{ common.getRupiahFormat(actualPrice) }}</td>
             <td></td>
+          </tr>
+          <tr *ngIf="isTabOpen.comparison">
+            <td colspan="7">Total Price</td>
+            <td>{{ common.getRupiahFormat(planPrice) }}</td>
+            <td>{{ common.getRupiahFormat(actualPrice) }}</td>
+            <td colspan="2"></td>
           </tr>
         </tfoot>
       </table>
@@ -149,22 +176,44 @@
           <div class="row g-3">
             <div class="col-md-4 col-sm-6" *ngFor="let item of detailModalForm.budgetingData">
               <p class="mb-2 text-uppercase fw-semibold">{{ common.getMonthName(item.month) }}</p>
-              <div class="d-flex justify-content-between">
-                <div class="fs-12 text-muted">Quantity </div>
-                <div class="fs-6">{{ common.formatDecimal(item.quantity) }}</div>
-              </div>
-              <div class="d-flex justify-content-between">
-                <div class="fs-12 text-muted">Value ($) </div>
-                <div class="fs-6">{{ common.getRupiahFormat(item.price) }}</div>
-              </div>
-              <div class="d-flex justify-content-between">
-                <div class="fs-12 text-muted">Prodplan </div>
-                <div class="fs-6">{{ common.formatDecimal(item.prodplan) }}</div>
-              </div>
-              <div class="d-flex justify-content-between">
-                <div class="fs-12 text-muted">Total Week </div>
-                <div class="fs-6">{{ item.total_week }}</div>
-              </div>
+              <ng-container *ngIf="isTabOpen.budgetPlan || isTabOpen.actual">
+                <div class="d-flex justify-content-between">
+                  <div class="fs-12 text-muted">Quantity </div>
+                  <div class="fs-6">{{ common.formatDecimal(item.quantity) }}</div>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <div class="fs-12 text-muted">Value ($) </div>
+                  <div class="fs-6">{{ common.getRupiahFormat(item.price) }}</div>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="isTabOpen.budgetPlan">
+                <div class="d-flex justify-content-between">
+                  <div class="fs-12 text-muted">Prodplan </div>
+                  <div class="fs-6">{{ common.formatDecimal(item.prodplan) }}</div>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <div class="fs-12 text-muted">Total Week </div>
+                  <div class="fs-6">{{ item.total_week }}</div>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="isTabOpen.comparison">
+                <div class="d-flex justify-content-between">
+                  <div class="fs-12 text-muted">Plan Quantity </div>
+                  <div class="fs-6">{{ common.formatDecimal(item.plan_qty)}}</div>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <div class="fs-12 text-muted">Actual Quantity </div>
+                  <div class="fs-6">{{ common.formatDecimal(item.actual_qty) }}</div>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <div class="fs-12 text-muted">Plan Value ($) </div>
+                  <div class="fs-6">{{ common.getRupiahFormat(item.plan_price) }}</div>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <div class="fs-12 text-muted">Actual Value ($) </div>
+                  <div class="fs-6">{{ common.getRupiahFormat(item.actual_price) }}</div>
+                </div>
+              </ng-container>
             </div>
           </div>
         </div>
@@ -246,10 +295,12 @@
       <h3>Empty</h3>
     </div>
     <div class="d-flex justify-content-center mb-3">
-      <a class="text-muted">Budgeting data on factory line {{ selectedLine.lineName }} in {{ _year }} has not been
+      <a class="text-muted" *ngIf="isTabOpen.budgetPlan">Budgeting data on factory line {{ selectedLine.lineName }} in {{ _year }} has not been
         planned yet.</a>
+      <a class="text-muted" *ngIf="isTabOpen.actual">Actual data on factory line {{ selectedLine.lineName }} in {{ _year }} are not available.</a>
+      <a class="text-muted" *ngIf="isTabOpen.comparison">Cannot compare because budgeting data is empty.</a>
     </div>
-    <div class="d-flex justify-content-center">
+    <div class="d-flex justify-content-center" *ngIf="isTabOpen.budgetPlan">
       <button type="button" class="btn btn-soft-primary" (click)="openPrevModal(prevmodal)">Get Data From Previous
         Year</button>
     </div>

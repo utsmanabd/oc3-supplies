@@ -11,6 +11,12 @@ interface DashboardChart {
   categories?: any[];
 }
 
+interface ProdplanData {
+  plan?: number;
+  actual?: number;
+  month?: number;
+}
+
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
@@ -19,6 +25,8 @@ interface DashboardChart {
 export class DashboardComponent {
 
   emptyChartData = () => { return { rawData: [], series: [], categories: [] } as DashboardChart }
+
+  prodplanData: ProdplanData[] = []
 
   factoryLineBudgetColumnChart!: ChartType;
   factoryLineBudgetData: DashboardChart = this.emptyChartData()
@@ -75,6 +83,8 @@ export class DashboardComponent {
   async ngOnInit() {
     await this.getBudgetPerLine(this.year)
     await this.getActualPerLine(this.year)
+    await this.getProdplanByLine(this.year, this.selectedLine.id)
+    await this.getActualProdplanByLine(this.year, this.selectedLine.id)
     await this.getBudgetPerSection(this.year, this.selectedLine.id)
     await this.getActualPerSection(this.year, this.selectedLine.id)
     await this.getBudgetPerSupply(this.year, this.selectedLine.id)
@@ -148,6 +158,61 @@ export class DashboardComponent {
           this.isLoading = false
           this.common.showServerErrorAlert(Const.ERR_GET_MSG("Actual Per Line"), err)
           reject(err)
+        },
+        complete: () => {
+          this.isLoading = false;
+          resolve(true)
+        }
+      })
+    })
+  }
+
+  async getProdplanByLine(year: number, line: number) {
+    return new Promise((resolve, reject) => {
+      this.isLoading = true;
+      this.apiService.resetCachedData("prodplanYearLine")
+      this.apiService.getProdplanByYearAndLine(year, line).subscribe({
+        next: (res: any) => {
+          let data: any[] = res.data
+          this.prodplanData.splice(0)
+          data.forEach(item => {
+            this.prodplanData.push({
+              actual: 0,
+              plan: item.prodplan,
+              month: item.month
+            })
+          })
+        },
+        error: (err) => {
+          this.isLoading = false;
+          this.common.showServerErrorAlert(Const.ERR_GET_MSG("Prodplan"), err)
+          reject(err);
+        },
+        complete: () => {
+          this.isLoading = false;
+          resolve(true)
+        }
+      })
+    })
+  }
+
+  async getActualProdplanByLine(year: number, lineId: number) {
+    return new Promise((resolve, reject) => {
+      this.isLoading = true;
+      this.apiService.getActualProdplanByLine(year, lineId).subscribe({
+        next: (res: any) => {
+          let data: any[] = res.data
+          data.forEach(item => {
+            const index = this.prodplanData.findIndex(obj => obj.month === item.month)
+            if (index !== -1) {
+              this.prodplanData[index].actual = item.prodplan
+            }
+          })
+        },
+        error: (err) => {
+          this.isLoading = false;
+          this.common.showServerErrorAlert(Const.ERR_GET_MSG("Actual Prodplan"), err)
+          reject(err);
         },
         complete: () => {
           this.isLoading = false;
@@ -308,11 +373,7 @@ export class DashboardComponent {
 
           let sectionMonthActualData = [...data].filter(item => item.cost_ctr_id === this.selectedSection.id)
 
-          const dataMap: any = {}
-          sectionMonthActualData.forEach(obj => dataMap[obj.month] = obj)
-          this.sectionBudgetMonthColumnData.rawData?.forEach(obj => {
-            if (!dataMap[obj.month]) sectionMonthActualData.push({...obj, price: 0})
-          })
+          this.transformBudgetActual(this.sectionBudgetMonthColumnData.rawData!, sectionMonthActualData, 'month')
 
           this.sectionActualMonthColumnData = {
             rawData: sectionMonthActualData.sort((a, b) => a.month - b.month),
@@ -352,19 +413,28 @@ export class DashboardComponent {
   }
 
   transformHeatmapSeries(rawData: any[]): any[] {
-    return rawData.reduce((acc: any[], curr: any) => {
+    const transformedData = rawData.reduce((acc: any[], curr: any) => {
       const existingSection = acc.find((item: any) => item.name === curr.section);
       if (existingSection) {
-        existingSection.data.push({x: this.common.getSimpleMonthName(curr.month), y: curr.price});
+        existingSection.data.push({x: curr.month, y: curr.price});
       } else {
-        acc.push({name: curr.section, data: [{x: this.common.getSimpleMonthName(curr.month), y: curr.price}]});
+        acc.push({name: curr.section, data: [{x: curr.month, y: curr.price}]});
       }
       return acc;
     }, [])
-  }
+    
+    transformedData.forEach(section => {
+      const existingMonths = section.data.map((item: any) => item.x);
+      for (let i = 1; i <= 12; i++) {
+        if (!existingMonths.includes(i)) {
+          section.data.push({x: i, y: 0});
+        }
+      }
+      section.data.sort((a: any, b: any) => a.x - b.x);
+      section.data.forEach((item: any) => item.x = this.common.getSimpleMonthName(item.x))
+    })
 
-  jsonToString(data: any): string {
-    return JSON.stringify(data)
+    return transformedData;
   }
 
   onFactoryLineChange(event$: any) {
@@ -376,6 +446,8 @@ export class DashboardComponent {
   async changeFactoryLine(lineId: number) {
     const index = this.common.getIndexById(this.lineData, lineId, "lineId")
     this.selectedLine = { id: lineId, name: this.lineData[index].line }
+    await this.getProdplanByLine(this.year, lineId)
+    await this.getActualProdplanByLine(this.year, lineId)
     await this.getBudgetPerSection(this.year, lineId)
     await this.getActualPerSection(this.year, lineId).then(() => {
       this.setSectionBudgetChartValue()
@@ -442,6 +514,12 @@ export class DashboardComponent {
     }
     
     this.setBudgetMonthSectionChartValue()
+  }
+
+  setProdplanPercentage(plan: number, actual: number) {
+    const difference = actual - plan
+    const percentage = (difference / plan) * 100;
+    return (plan && actual) == 0 ? 0 : percentage
   }
 
   onTreemapShowLabels(event: any) {

@@ -113,9 +113,6 @@ export class ProdplanComponent {
         next: (res: any) => {
           this.isLoading = false;
           this.prodplanData = res.data;
-          this.prodplanData.forEach(item => {
-            item.prodplan = +item.prodplan;
-          })
         },
         error: (err) => {
           this.isLoading = false;

@@ -1,7 +1,7 @@
 import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule, DecimalPipe, JsonPipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { NgbToastModule, NgbProgressbarModule, NgbPaginationModule, NgbTypeahead } from '@ng-bootstrap/ng-bootstrap';
+import { NgbToastModule, NgbProgressbarModule, NgbPaginationModule, NgbTypeahead, NgbAccordionModule, NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
 
 import { FlatpickrModule } from 'angularx-flatpickr';
 import { NgApexchartsModule } from 'ng-apexcharts';
@@ -59,7 +59,9 @@ import { UsersComponent } from './master/users/users.component';
     ReactiveFormsModule,
     NgbPaginationModule,
     NgbTypeahead,
-    JsonPipe
+    JsonPipe,
+    NgbAccordionModule,
+    NgbNavModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [DecimalPipe]

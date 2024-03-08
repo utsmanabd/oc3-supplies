@@ -5,8 +5,7 @@ import { CommonService } from 'src/app/core/services/common.service';
 import { restApiService } from 'src/app/core/services/rest-api.service';
 import { Const } from 'src/app/core/static/const';
 import { Material } from './material.model';
-import { Router } from '@angular/router';
-import { ToastService } from '../dashboards/dashboard/toast-service';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-budget-input',
@@ -14,10 +13,13 @@ import { ToastService } from '../dashboards/dashboard/toast-service';
   styleUrls: ['./budget-input.component.scss']
 })
 export class BudgetInputComponent {
+  tabData = [{id: 1, name: 'Budget Plan'}, {id: 2, name: 'Actual'}, {id: 3, name: 'Comparison'}]
   
-  monthData = [1,2,3,4,5,6,7,8,9,10,11,12]
+  monthData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
   sectionData: any[] = []
-  tableColumns = ['Section / Cost Center', 'Material Code', 'Material Description', 'Calculation by', 'UOM', 'Average Price', 'BOM', 'Total Quantity', 'Total Price', ' ']
+  budgetPlanTableCol = ['Section / Cost Center', 'Material Code', 'Material Description', 'Calculation by', 'UOM', 'Average Price', 'BOM', 'Total Quantity', 'Total Price', ' ']
+  budgetActualTableCol = ['#', 'Section / Cost Center', 'Material Code', 'Material Description', 'UOM', 'Total Quantity', 'Total Price', ' ']
+  comparisonTableCol = ['#', 'Section / Cost Center', 'Material Code', 'Material Description', 'UOM', 'Plan Quantity', 'Actual Quantity', 'Plan Price', 'Actual Price', '%', ' ']
   index: number = 0;
 
   _year: number = 0
@@ -60,6 +62,26 @@ export class BudgetInputComponent {
   searchLength: number | null = null;
   isNotHaveAveragePrice = false
 
+  isFormInvalid = false;
+  isLoading: boolean = false;
+  breadCrumbItems!: Array<{}>;
+
+  actualPrice: number = 0
+  planPrice: number = 0
+  isTabOpen = {
+    budgetPlan: true,
+    actual: false,
+    comparison: false
+  }
+  prevBomPercentage: number = 100
+  searchKeyword = ''
+
+  selectedMonthFilter = -1
+  selectedSectionFilter = -1
+  isFilterChange = false;
+
+  private refreshFilterSubject = new Subject<string>()
+
   materialFormatter = (mat: Material) => mat.material_code ? `${mat.material_code} - ${mat.material_desc}` : ``
   costCenterFormatter = (item: any) => item.cost_ctr ? `${item.section} (${item.cost_ctr})` : ``
 
@@ -83,104 +105,138 @@ export class BudgetInputComponent {
     tap(() => this.costCenterSearching = false)
   )
 
-  isFormInvalid = false;
-  isLoading: boolean = false;
-  breadCrumbItems!: Array<{}>;
-
-  totalPrice: number = 0;
-  totalQuantity: number = 0;
-
-  selectedMonthFilter = -1
-  selectedSectionFilter = -1
-  isFilterChange = false;
-
-  private clickSubject = new Subject<string>()
-
   constructor(
     private apiService: restApiService, 
     public common: CommonService, 
     private modalService: NgbModal, 
     private router: Router,
+    private route: ActivatedRoute
   ) {
       this.year = new Date().getFullYear();
       this._year = this.year
       this.breadCrumbItems = [
         { label: 'Supplies Budgeting', active: true }
       ];
-      this.clickSubject.pipe(debounceTime(350)).subscribe(async value => {
+
+      this.refreshFilterSubject.pipe(debounceTime(350)).subscribe(async value => {
         this._year = this.year
-        this.apiService.resetCachedData("suppliesYearLine")
-        this.apiService.resetCachedData("prodplanYearLine")
-        if (value !== "filterChange") {
-          this.sectionData = []
-          this.selectedMonthFilter = -1
-          this.selectedSectionFilter = -1
+        if (value !== "filterChange") this.resetFilterAndSectionData()
+        if (this.isTabOpen.budgetPlan) {
+          await this.getSuppliesBudgetPlan(this.year, this.selectedLine.lineId, true).then(() => {
+            this.getSectionData()
+            this.getTotalPrice(this.suppliesData)
+            if (value == "filterChange") {
+              this.onSupplyFilter(null, this.selectedMonthFilter, this.selectedSectionFilter)
+            }
+          })
+
+        } else if (this.isTabOpen.actual) {
+          await this.getSuppliesBudgetActual(this.year, this.selectedLine.lineId, true).then(() => {
+            this.getSectionData()
+            this.getTotalPrice(this.suppliesData)
+          })
+          
+        } else if (this.isTabOpen.comparison) {
+          await this.getMergedSuppliesActualPlan().then(() => {
+            this.getSectionData()
+            this.getTotalPrice(this.suppliesData)
+          })
         }
-        await this.getSuppliesByYearAndLine(this.year, this.selectedLine.lineId).then(() => {
-          if (value == "filterChange") {
-            this.onSupplyFilter(null, this.selectedMonthFilter, this.selectedSectionFilter)
-            console.log("AAA");
-            console.log(this.selectedSectionFilter);
-          }
-        })
-        await this.getProdplanByYearAndLine(this.year, this.selectedLine.lineId)
+        
+        await this.getProdplanByYearAndLine(this.year, this.selectedLine.lineId, true)
       })
   }
 
   async ngOnInit() {
+    this.route.queryParams.subscribe({next: (params) => {
+      console.log(params);
+      
+      if (params['lineId']) {
+        this.selectedLine.lineId = +params['lineId']
+      }
+      if (params['year']) {
+        this.year = +params['year']
+      }
+      if (params['month']) {
+        this.selectedMonthFilter = +params['month']
+      }
+      if (params['costCtrId']) {
+        this.selectedSectionFilter = +params['costCtrId']
+      }
+      if (params['tab']) {
+        if (params['tab'] === 'Plan') this.isTabOpen = { budgetPlan: true, actual: false, comparison: false }
+        else if (params['tab'] === 'Actual') this.isTabOpen = { budgetPlan: false, actual: true, comparison: false }
+        else if (params['tab'] === 'Comparison') this.isTabOpen = { budgetPlan: false, actual: false, comparison: true }
+      }
+    }})
+
     await this.getFactoryLine()
     await this.getCalculationBudget()
-    await this.getSuppliesByYearAndLine(this.year, this.selectedLine.lineId)
+    await this.getSuppliesBudgetPlan(this.year, this.selectedLine.lineId).then(() => {
+      this.getSectionData()
+      this.getTotalPrice(this.suppliesData)
+    })
     await this.getProdplanByYearAndLine(this.year, this.selectedLine.lineId)
   }
 
   ngOnDestroy() {
     const yearNow = new Date().getFullYear();
-    if (this.year != yearNow || this.selectedLine.lineId != this.lineIdBefore) {
-      this.apiService.resetCachedData("factoryLine")
-      this.apiService.resetCachedData("suppliesYearLine")
-      this.apiService.resetCachedData("prodplanYearLine")
+    if (this.year != yearNow || this.selectedLine.lineId != this.lineIdBefore || !this.isTabOpen.budgetPlan) {
+      const cacheKeys = ["factoryLine", "suppliesYearLine", "actualSuppliesYearLine", "prodplanYearLine"]
+      cacheKeys.forEach(key => {
+        this.apiService.resetCachedData(key)
+      })
     }
   }
 
-  async getSuppliesByYearAndLine(year: number, lineId: number) {
-    return new Promise((resolve, reject) => {
+  async getSuppliesBudgetPlan(year: number, lineId: number, isResetCache = false) {
+    if (isResetCache) {
+      this.apiService.resetCachedData("suppliesYearLine")
+    }
+    return new Promise<any[]>((resolve, reject) => {
       this.isLoading = true
       this.apiService.getSuppliesByYearAndLine(year, lineId).subscribe({
         next: (res: any) => {
-          this.isLoading = false
-          this.suppliesData = res.data;
+          let data: any[] = res.data
+          this.suppliesData = data
           this.suppliesData.forEach(item => {
             item.is_selected = false;
-            item.average_price = +item.average_price
-            item.bom = +item.bom
-            item.budgeting_data.forEach((data: any) => {
-              data.prodplan = +data.prodplan
-              data.quantity = +data.quantity
-              data.price = +data.price
-            })
           })
-          let section = this.common.getUniqueData(this.suppliesData, 'cost_ctr_id')
-          if (this.sectionData.length <= 0) {
-            section.forEach(item => {
-              this.sectionData.push({cost_ctr_id: item.cost_ctr_id, section: item.section, cost_center: item.cost_center})
-            })
-          }
           this.suppliesDataBefore = this.suppliesData.map(supply => ({...supply}))
-          console.log("sectionData: ", this.sectionData);
-          
+
+          this.isLoading = false
+          resolve(data)
         },
         error: (err) => {
           this.isLoading = false
           this.common.showServerErrorAlert(Const.ERR_GET_MSG("Supplies"), err)
           reject(err)
-        },
-        complete: () => {
-          console.log(this.suppliesData);
-          
-          this.getTotalQuantityAndPrice(this.suppliesData)
-          resolve(true)
         }
+      })
+    })
+  }
+
+  async getSuppliesBudgetActual(year: number, lineId: number, isResetCache = false) {
+    if (isResetCache) {
+      this.apiService.resetCachedData("actualSuppliesYearLine")
+    }
+    return new Promise<any[]>((resolve, reject) => {
+      this.isLoading = true
+      this.apiService.getActualSuppliesByYearAndLine(year, lineId).subscribe({
+        next: (res: any) => {
+          let data: any[] = res.data
+          this.suppliesData = data;
+          this.suppliesData.forEach(item => item.is_selected = false)
+          this.suppliesDataBefore = this.suppliesData.map(supply => ({...supply}))
+
+          this.isLoading = false
+          resolve(data)
+        },
+        error: (err) => {
+          this.isLoading = false
+          this.common.showServerErrorAlert(Const.ERR_GET_MSG("Supplies Actual"), err)
+          reject(err)
+        },
       })
     })
   }
@@ -244,7 +300,10 @@ export class BudgetInputComponent {
     })
   }
 
-  async getProdplanByYearAndLine(year: number, line: number) {
+  async getProdplanByYearAndLine(year: number, line: number, isResetCache = false) {
+    if (isResetCache) {
+      this.apiService.resetCachedData("prodplanYearLine")
+    }
     return new Promise((resolve, reject) => {
       this.isLoading = true
       this.apiService.getProdplanByYearAndLine(year, line).subscribe({
@@ -266,15 +325,24 @@ export class BudgetInputComponent {
     })
   }
 
-  getTotalQuantityAndPrice(suppliesData: any[]) {
-    let totalQuantity = 0
-    let totalPrice = 0
+  getTotalPrice(suppliesData: any[]) {
+    let planPrice = 0
+    let actualPrice = 0
+
     suppliesData.forEach(supply => {
-      totalQuantity += this.common.sumElementFromArray(supply.budgeting_data, "quantity")
-      totalPrice += this.common.sumElementFromArray(supply.budgeting_data, "price")
+      if (this.isTabOpen.budgetPlan) {
+        planPrice += this.common.sumElementFromArray(supply.budgeting_data, "price")
+      }
+      else if (this.isTabOpen.actual) {
+        actualPrice += this.common.sumElementFromArray(supply.budgeting_data, "price")
+      }
+      else if (this.isTabOpen.comparison) {
+        planPrice += this.common.sumElementFromArray(supply.budgeting_data, "plan_price")
+        actualPrice += this.common.sumElementFromArray(supply.budgeting_data, "actual_price")
+      }
     })
-    this.totalQuantity = totalQuantity
-    this.totalPrice = totalPrice
+    this.actualPrice = actualPrice
+    this.planPrice = planPrice
   }
 
   showProdplanNotFoundAlert() {
@@ -293,11 +361,83 @@ export class BudgetInputComponent {
     })
   }
 
+  resetFilterAndSectionData() {
+    this.sectionData = []
+    this.selectedMonthFilter = -1
+    this.selectedSectionFilter = -1
+  }
+
+  getSectionData() {
+    if (this.sectionData.length <= 0) {
+      let section = this.common.getUniqueData(this.suppliesData, 'cost_ctr_id')
+      section.forEach(item => this.sectionData.push({cost_ctr_id: item.cost_ctr_id, section: item.section, cost_center: item.cost_center}))
+    }   
+  }
+
+  async onTabChange(event: any) {
+    this.resetFilterAndSectionData()
+
+    const selectedTab = JSON.parse(event.target.name)
+    if (!this.isTabOpen.budgetPlan && selectedTab.id === 1) {
+      await this.getSuppliesBudgetPlan(this.year, this.selectedLine.lineId, true).then(() => {
+        this.isTabOpen = { budgetPlan: true, actual: false, comparison: false }
+        this.getSectionData()
+        this.getTotalPrice(this.suppliesData)
+      })
+      
+    } else if (!this.isTabOpen.actual && selectedTab.id === 2) {
+      await this.getSuppliesBudgetActual(this.year, this.selectedLine.lineId, true).then(() => {
+        this.isTabOpen = { budgetPlan: false, actual: true, comparison: false }
+        this.getSectionData()
+        this.getTotalPrice(this.suppliesData)
+      })
+      
+    } else if (!this.isTabOpen.comparison && selectedTab.id === 3) {
+      await this.getMergedSuppliesActualPlan().then(() => {
+        this.isTabOpen = { budgetPlan: false, actual: false, comparison: true }
+        this.getSectionData()
+        this.getTotalPrice(this.suppliesData)
+      })
+    }
+  }
+
+  async getMergedSuppliesActualPlan() {
+    return new Promise(async (resolve, reject) => {
+      let planData: any[] = []
+      let actualData: any[] = []
+  
+      if (this.isTabOpen.budgetPlan) {
+        planData = [...this.suppliesData]
+        await this.getSuppliesBudgetActual(this.year, this.selectedLine.lineId, true).then(data => {
+          actualData = data
+        }).catch(err => reject(err))
+  
+      } else if (this.isTabOpen.actual) {
+        actualData = [...this.suppliesData]
+        await this.getSuppliesBudgetPlan(this.year, this.selectedLine.lineId, true).then(data => {
+          planData = data
+        }).catch((err) => reject(err))
+
+      } else if (this.isTabOpen.comparison) {
+        await this.getSuppliesBudgetActual(this.year, this.selectedLine.lineId, true).then(data => {
+          actualData = data
+        }).catch(err => reject(err))
+        await this.getSuppliesBudgetPlan(this.year, this.selectedLine.lineId, true).then(data => {
+          planData = data
+        }).catch((err) => reject(err))
+      }
+  
+      this.suppliesData = this.mergeBudgetData(planData, actualData)
+      this.suppliesDataBefore = this.suppliesData.map(a => ({...a}))
+      resolve(true)
+    })
+    
+    
+  }
+
   onMaterialFormSearch(event: any) {
     setTimeout(() => {
       if (this.material) {
-        console.log(this.material);
-        
         if (!this.material.average_price) {
           this.isNotHaveAveragePrice = true
           this.avgPrice = null
@@ -312,16 +452,16 @@ export class BudgetInputComponent {
   onCostCenterFormSearch() {
     setTimeout(() => {
       if (this.costCenter) {
-        console.log(this.costCenter);
+
       }
     }, 50)
   }
 
-  onFactoryLineChange(event: any) {
+  async onFactoryLineChange(event: any) {
     if (event.target.value) {
       const selectedLineIndex = this.common.getIndexById(this.lineData, +event.target.value, "id")
       this.selectedLine = JSON.parse(this.lineData[selectedLineIndex].value)
-      this.clickSubject.next("line")
+      this.refreshFilterSubject.next("line")
     }
   }
 
@@ -335,19 +475,19 @@ export class BudgetInputComponent {
   onButtonChangeYear(action: string) {
     if (action === "next") this.year += 1
     if (action === "prev") this.year -= 1
-    this.clickSubject.next("year")
+    this.refreshFilterSubject.next("year")
   }
 
   onYearChange(event: any) {
     if (event.target.value) {
-      this.clickSubject.next("year")
+      this.refreshFilterSubject.next('year')
     }
   }
 
   openDetailModal(content: TemplateRef<any>, data: any) {
     this.detailModalForm.concatenate = `${data.cost_center}-${data.material_code}`
     this.detailModalForm.materialDesc = data.material_desc
-    this.detailModalForm.calculationBy = data.calculation_by
+    this.detailModalForm.calculationBy = this.isTabOpen.budgetPlan ? data.calculation_by : ""
     this.detailModalForm.budgetingData = data.budgeting_data
 
     this.modalService.open(content, { size: 'lg' })
@@ -394,7 +534,6 @@ export class BudgetInputComponent {
       this.isFormInvalid = false
       if (!this.material.average_price) {
         this.updateMaterial(this.material.id, { average_price: this.avgPrice }).then(success => {
-          console.log(`average price has been added on ${this.material.material_code}`);
           if (success) this.budgetId ? this.saveChanges(true) : this.saveChanges()
         })
       } else {
@@ -441,7 +580,6 @@ export class BudgetInputComponent {
         price: price
       })
     })
-    console.log(data);
 
     if (isEditMode) {
       data.forEach(item => {
@@ -451,7 +589,7 @@ export class BudgetInputComponent {
       this.apiService.updateSuppliesByBudgetAndProdplanId(this.budgetId, data).subscribe({
         next: (res: any) => {
           this.isLoading = false
-          this.clickSubject.next(this.isFilterChange ? "filterChange" : "Update")
+          this.refreshFilterSubject.next(this.isFilterChange ? "filterChange" : "Update")
           this.modalService.dismissAll("Edit")
         },
         error: (err) => {
@@ -478,7 +616,7 @@ export class BudgetInputComponent {
       this.common.showDeleteWarningAlert(Const.ALERT_DEL_MSG(`${data.material_desc} (${data.section})`)).then(async result => {
         if (result.value) {
           const removeData = { is_removed: 1 }
-          await this.updateSupplyBudget(data.budget_id, removeData).then((isSuccess) => this.clickSubject.next(this.isFilterChange ? "filterChange" : "Delete"))
+          await this.updateSupplyBudget(data.budget_id, removeData).then((isSuccess) => this.refreshFilterSubject.next(this.isFilterChange ? "filterChange" : "Delete"))
         }
       })
     } else {
@@ -498,19 +636,9 @@ export class BudgetInputComponent {
             if (removeData.length > 0) {
               await this.updateMultipleSupplyBudget(removeData).then((isSuccess) => {
                 if (isSuccess) {
-                  if (removeData.length > 10) {
-                    console.log("> 10");
-                    
-                    this.isLoading = true
-                    setTimeout(() => {
-                      this.isLoading = false
-                      this.clickSubject.next(this.isFilterChange ? "filterChange" : "RemoveMultiple")
-                    }, 5000)
-                  } else {
-                    console.log("< 10");
-                    
-                    this.clickSubject.next(this.isFilterChange ? "filterChange" : "RemoveMultiple")
-                  }
+                  setTimeout(() => {
+                    this.refreshFilterSubject.next(this.isFilterChange ? "filterChange" : "RemoveMultiple")
+                  }, 350)
                 }
               })
             }
@@ -586,7 +714,7 @@ export class BudgetInputComponent {
     this.isLoading = true
     this.apiService.insertSupplies(data).subscribe({
       next: (res: any) => {
-        this.clickSubject.next(this.isFilterChange ? "filterChange" : "Insert")
+        this.refreshFilterSubject.next(this.isFilterChange ? "filterChange" : "Insert")
         this.isLoading = false
         if (this.modalService.hasOpenModals()) {
           this.modalService.dismissAll()
@@ -600,7 +728,6 @@ export class BudgetInputComponent {
     })
   }
 
-  prevBomPercentage: number = 100
   openPrevModal(content?: any) {
     if (this.prodplanData.length !== 12) {
       this.showProdplanNotFoundAlert()
@@ -702,20 +829,14 @@ export class BudgetInputComponent {
     }
 
     if (event != null) {
-      console.log(event.target.id);
       if (event.target.id === 'monthFilter') {
         this.selectedMonthFilter = +event.target.value;
       }
-  
       if (event.target.id === 'sectionFilter') {
         this.selectedSectionFilter = +event.target.value;
       }
     } else {
-      console.log("BBB");
-      
       if (month && sectionId) {
-        console.log(sectionId);
-        
         this.selectedMonthFilter = month
         this.selectedSectionFilter = sectionId
       }
@@ -734,33 +855,115 @@ export class BudgetInputComponent {
       this.isFilterChange = false
     }
 
-    this.getTotalQuantityAndPrice(this.suppliesData)
+    this.getTotalPrice(this.suppliesData)
     
   }
 
-  searchKeyword = ''
-  supplies() {
+  supplies(): any[] {
     return this.suppliesData.filter(
-      (data) =>
-        data.section
-          .toLowerCase()
-          .includes(this.searchKeyword.trim().toLowerCase()) ||
-        data.material_desc
-          .toLowerCase()
-          .includes(this.searchKeyword.trim().toLowerCase()) ||
-        data.uom
-          .toLowerCase()
-          .includes(this.searchKeyword.trim().toLowerCase()) ||
-        data.calculation_by
-          .toLowerCase()
-          .includes(this.searchKeyword.trim().toLowerCase()) ||
-        data.cost_center.toString()
-          .includes(this.searchKeyword.trim()) ||
-        data.material_code.toString()
-          .includes(this.searchKeyword.trim()) ||
-        `${data.cost_center}-${data.material_code}`
-          .includes(this.searchKeyword.trim().toLowerCase())
+      (data) => {
+        const filteredSupplies = data.section
+            .toLowerCase()
+            .includes(this.searchKeyword.trim().toLowerCase()) ||
+          data.material_desc
+            .toLowerCase()
+            .includes(this.searchKeyword.trim().toLowerCase()) ||
+          data.uom
+            .toLowerCase()
+            .includes(this.searchKeyword.trim().toLowerCase()) ||
+          data.cost_center.toString()
+            .includes(this.searchKeyword.trim()) ||
+          data.material_code.toString()
+            .includes(this.searchKeyword.trim()) ||
+          `${data.cost_center}-${data.material_code}`
+            .includes(this.searchKeyword.trim().toLowerCase())
+        
+        if (this.isTabOpen.budgetPlan) {
+          return filteredSupplies || data.calculation_by.toLowerCase().includes(this.searchKeyword.trim().toLowerCase())
+        } else {
+          return filteredSupplies
+        }
+      }
+        
     )
   }
   
+  mergeBudgetData(plan: any[], actual: any[]): any[] {
+    const mergedData: any[] = [];
+
+    plan.forEach(planItem => {
+        const matchingActual = actual.find((actualItem: any) => actualItem.budget_id === planItem.budget_id);
+        const mergedItem: any = {
+            budget_id: planItem.budget_id,
+            line: planItem.line,
+            year: planItem.year,
+            cost_ctr_id: planItem.cost_ctr_id,
+            cost_center: planItem.cost_center,
+            section: planItem.section,
+            material_code: planItem.material_code,
+            material_desc: planItem.material_desc,
+            uom: planItem.uom,
+            budgeting_data: []
+        };
+
+        if (matchingActual) {
+            for (let i = 1; i <= 12; i++) {
+                const planBudget = planItem.budgeting_data.find((data: any) => data.month === i) || { quantity: 0, price: 0 };
+                const actualBudget = matchingActual.budgeting_data.find((data: any) => data.month === i) || { quantity: 0, price: 0 };
+
+                mergedItem.budgeting_data.push({
+                    month: i,
+                    plan_qty: planBudget.quantity,
+                    plan_price: planBudget.price,
+                    actual_qty: actualBudget.quantity,
+                    actual_price: actualBudget.price
+                });
+            }
+        } else {
+            planItem.budgeting_data.forEach((data: any) => {
+                mergedItem.budgeting_data.push({
+                    month: data.month,
+                    plan_qty: data.quantity,
+                    plan_price: data.price,
+                    actual_qty: 0,
+                    actual_price: 0
+                });
+            });
+        }
+
+        mergedData.push(mergedItem);
+    });
+
+    actual.forEach(actualItem => {
+        const matchingPlan = plan.find((planItem: any) => planItem.budget_id === actualItem.budget_id);
+        if (!matchingPlan) {
+            const mergedItem: any = {
+                budget_id: actualItem.budget_id,
+                line: actualItem.line,
+                year: actualItem.year,
+                cost_center: actualItem.cost_center,
+                cost_ctr_id: actualItem.cost_ctr_id,
+                section: actualItem.section,
+                material_code: actualItem.material_code,
+                material_desc: actualItem.material_desc,
+                uom: actualItem.uom,
+                budgeting_data: []
+            };
+
+            actualItem.budgeting_data.forEach((data: any) => {
+                mergedItem.budgeting_data.push({
+                    month: data.month,
+                    plan_qty: 0,
+                    plan_price: 0,
+                    actual_qty: data.quantity,
+                    actual_price: data.price
+                });
+            });
+
+            mergedData.push(mergedItem);
+        }
+    });
+
+    return mergedData;
+  }
 }

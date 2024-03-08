@@ -103,15 +103,51 @@
                                             class="mdi mdi-chevron-down align-middle ms-1"></i></span>
                                 </button>
                                 <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
-                                    <a *ngFor="let item of lineData" class="dropdown-item" (click)="onFactoryLineChange($event)" href="javascript:void(0);" [id]="jsonToString(item)">{{ item.line }}</a>
+                                    <a *ngFor="let item of lineData" class="dropdown-item" (click)="onFactoryLineChange($event)" href="javascript:void(0);" [id]="common.jsonToString(item)">{{ item.line }}</a>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    
                     <div class="card-body bg-soft-light">
                         <!-- <div class="row g-0 text-center shadow-sm p-1" style="border-radius: 4px;">
         
                         </div> -->
+                        <div class="row">
+                            <div class="col-xl-12">
+                                <div class="card">
+                                    <ngb-accordion #acc="ngbAccordion" [closeOthers]="true" [activeIds]="'prodplan'">
+                                        <ngb-panel id="prodplan">
+                                            <ng-template ngbPanelTitle class="accordion-header border-0 bg-transparent">
+                                                <h4 class="card-title mb-0">Prodplan</h4>    
+                                            </ng-template>
+                                            <ng-template ngbPanelContent>
+                                                <div class="row g-0 text-center">
+                                                    <div class="col-lg-2 col-md-3 col-sm-4" *ngFor="let data of prodplanData">
+                                                        <div class="p-3 border border-dashed border-start-0">
+                                                            <small class="fw-semibold text-muted mb-2 text-uppercase">{{ common.getMonthName(data.month!) }}</small>
+                                                            <h5 class="mb-1"><span><small>{{ common.formattedNumber(data.actual!) }}</small></span>
+                                                                <span class="text-{{ setProdplanPercentage(data.plan!, data.actual!) >= 0 ? 'success' : 'danger' }} ms-1 fs-12">{{ setProdplanPercentage(data.plan!, data.actual!).toFixed(2) }}%<i
+                                                                       *ngIf="setProdplanPercentage(data.plan!, data.actual!) !== 0" class="ri-arrow-right-{{ setProdplanPercentage(data.plan!, data.actual!) < 0 ? 'down' : 'up' }}-line ms-1 align-middle"></i></span>
+                                                            </h5>
+                                                            <small class="text-muted mb-0">From planning of <span class="fw-semibold">{{ common.formattedNumber(data.plan!) }}</span></small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </ng-template>
+                                        </ngb-panel>
+                                    </ngb-accordion>
+                                    
+
+                                    <!-- <div class="card-header">
+                                        <h4 class="card-title mb-0">Prodplan</h4>
+                                    </div>
+                                    <div class="card-body p-0 border-0">
+                                        
+                                    </div> -->
+                                </div>
+                            </div>
+                        </div>
                         <div class="row">
                             <div class="col-xl-8" *ngIf="sectionBudgetBarChart && sectionBudgetData.rawData?.length != 0">
                                 <div class="card">
@@ -219,6 +255,18 @@
                                 <div class="card">
                                     <div class="card-header border-bottom-dashed align-items-center d-flex">
                                         <h5 class="mb-0 flex-grow-1">Section: <span class="text-success">{{ selectedSection.name }}</span></h5>
+                                        <div class="me-2">
+                                            <div class="dropdown" ngbDropdown>
+                                                <button class="btn btn-soft-primary btn-sm arrow-none" href="javascript:void(0);"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" ngbDropdownToggle>
+                                                    <span class="text-uppercase">{{ selectedLine.name }}<i
+                                                            class="mdi mdi-chevron-down align-middle ms-1"></i></span>
+                                                </button>
+                                                <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
+                                                    <a *ngFor="let item of lineData" class="dropdown-item" (click)="onFactoryLineChange($event)" href="javascript:void(0);" [id]="common.jsonToString(item)">{{ item.line }}</a>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <div>
                                             <div class="dropdown" ngbDropdown>
                                                 <button class="btn btn-soft-success btn-sm arrow-none"

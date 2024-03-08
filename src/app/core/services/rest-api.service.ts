@@ -21,7 +21,7 @@ export class restApiService {
       const index = this.cache.findIndex((item) => item[cachedData])
       if (index >= 0) {
         this.cache.splice(index, 1)
-      } else throwError(`${cachedData} not found!`)
+      }
     } else {
       this.cache.splice(0)
     }
@@ -287,6 +287,15 @@ export class restApiService {
 
   getActualPerSectionAndMonth(year: number, lineId: number) {
     return this.requestHttpGet(`actual/sectionmonth-by-line?year=${year}&lineId=${lineId}`)
+  }
+
+  getActualProdplanByLine(year: number, lineId: number) {
+    return this.requestHttpGet(`actual/prodplan/year-line/${year}/${lineId}`)
+  }
+
+  getActualSuppliesByYearAndLine(year: number, lineId: number) {
+    const cacheKey = `actualSuppliesYearLine`
+    return this.requestCachedHttpGet(`actual/supplies/${year}/${lineId}`, cacheKey)
   }
 
 }
