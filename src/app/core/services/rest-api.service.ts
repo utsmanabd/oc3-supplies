@@ -298,4 +298,8 @@ export class restApiService {
     return this.requestCachedHttpGet(`actual/supplies/${year}/${lineId}`, cacheKey)
   }
 
+  getActualPerSupply(year: number, lineId: number) {
+    return this.requestHttpGet(`actual/supply-by-line?year=${year}&lineId=${lineId}`)
+  }
+
 }

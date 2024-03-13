@@ -73,6 +73,8 @@ export class BudgetInputComponent {
     actual: false,
     comparison: false
   }
+  activeTab: number = 1
+
   prevBomPercentage: number = 100
   searchKeyword = ''
 
@@ -121,62 +123,65 @@ export class BudgetInputComponent {
       this.refreshFilterSubject.pipe(debounceTime(350)).subscribe(async value => {
         this._year = this.year
         if (value !== "filterChange") this.resetFilterAndSectionData()
-        if (this.isTabOpen.budgetPlan) {
-          await this.getSuppliesBudgetPlan(this.year, this.selectedLine.lineId, true).then(() => {
-            this.getSectionData()
-            this.getTotalPrice(this.suppliesData)
-            if (value == "filterChange") {
-              this.onSupplyFilter(null, this.selectedMonthFilter, this.selectedSectionFilter)
+        const getSuppliesData = async () => {
+          return new Promise<boolean>(async (resolve, reject) => {
+            if (this.isTabOpen.budgetPlan) {
+              await this.getSuppliesBudgetPlan(this.year, this.selectedLine.lineId, true).then(() => resolve(true)).catch((err) => reject(err))
+            } else if (this.isTabOpen.actual) {
+              await this.getSuppliesBudgetActual(this.year, this.selectedLine.lineId, true).then(() => resolve(true)).catch((err) => reject(err))
+            } else if (this.isTabOpen.comparison) {
+              await this.getMergedSuppliesActualPlan().then(() => resolve(true)).catch((err) => reject(err))
             }
           })
-
-        } else if (this.isTabOpen.actual) {
-          await this.getSuppliesBudgetActual(this.year, this.selectedLine.lineId, true).then(() => {
-            this.getSectionData()
-            this.getTotalPrice(this.suppliesData)
-          })
-          
-        } else if (this.isTabOpen.comparison) {
-          await this.getMergedSuppliesActualPlan().then(() => {
-            this.getSectionData()
-            this.getTotalPrice(this.suppliesData)
-          })
         }
-        
+        await getSuppliesData().then(() => {
+          this.getSectionData()
+          this.getTotalPrice(this.suppliesData)
+          if (value == "filterChange") {
+            this.onSupplyFilter(null, this.selectedMonthFilter, this.selectedSectionFilter)
+          }
+        })
         await this.getProdplanByYearAndLine(this.year, this.selectedLine.lineId, true)
       })
   }
 
   async ngOnInit() {
-    this.route.queryParams.subscribe({next: (params) => {
-      console.log(params);
-      
-      if (params['lineId']) {
-        this.selectedLine.lineId = +params['lineId']
-      }
-      if (params['year']) {
-        this.year = +params['year']
-      }
-      if (params['month']) {
-        this.selectedMonthFilter = +params['month']
-      }
-      if (params['costCtrId']) {
-        this.selectedSectionFilter = +params['costCtrId']
-      }
-      if (params['tab']) {
-        if (params['tab'] === 'Plan') this.isTabOpen = { budgetPlan: true, actual: false, comparison: false }
-        else if (params['tab'] === 'Actual') this.isTabOpen = { budgetPlan: false, actual: true, comparison: false }
-        else if (params['tab'] === 'Comparison') this.isTabOpen = { budgetPlan: false, actual: false, comparison: true }
-      }
-    }})
-
     await this.getFactoryLine()
     await this.getCalculationBudget()
-    await this.getSuppliesBudgetPlan(this.year, this.selectedLine.lineId).then(() => {
-      this.getSectionData()
-      this.getTotalPrice(this.suppliesData)
-    })
-    await this.getProdplanByYearAndLine(this.year, this.selectedLine.lineId)
+
+    const getBudgetPlanAndProdplan = async () => {
+      await this.getSuppliesBudgetPlan(this.year, this.selectedLine.lineId).then(() => {
+        this.getSectionData()
+        this.getTotalPrice(this.suppliesData)
+      })
+      await this.getProdplanByYearAndLine(this.year, this.selectedLine.lineId)
+    }
+
+    const params = this.route.snapshot.queryParams;
+    if (Object.keys(params).length > 0) {
+      this.isLoading = true
+      if (params['lineId']) this.selectedLine.lineId = +params['lineId']
+      if (params['year']) this.year = +params['year']
+      if (params['month']) this.selectedMonthFilter = +params['month']
+      if (params['costCtrId']) this.selectedSectionFilter = +params['costCtrId']
+      if (params['tab']) {
+        if (params['tab'] === 'Plan') {
+          this.isTabOpen = { budgetPlan: true, actual: false, comparison: false }
+          this.activeTab = 1
+        }
+        else if (params['tab'] === 'Actual') {
+          this.isTabOpen = { budgetPlan: false, actual: true, comparison: false }
+          this.activeTab = 2
+        }
+        else if (params['tab'] === 'Comparison') {
+          this.isTabOpen = { budgetPlan: false, actual: false, comparison: true }
+          this.activeTab = 3
+        }
+      }
+
+      this.refreshFilterSubject.next(params['month'] || params['costCtrId'] ? 'filterChange' : 'default')
+
+    } else await getBudgetPlanAndProdplan()
   }
 
   ngOnDestroy() {
@@ -375,30 +380,44 @@ export class BudgetInputComponent {
   }
 
   async onTabChange(event: any) {
-    this.resetFilterAndSectionData()
 
     const selectedTab = JSON.parse(event.target.name)
-    if (!this.isTabOpen.budgetPlan && selectedTab.id === 1) {
-      await this.getSuppliesBudgetPlan(this.year, this.selectedLine.lineId, true).then(() => {
-        this.isTabOpen = { budgetPlan: true, actual: false, comparison: false }
-        this.getSectionData()
-        this.getTotalPrice(this.suppliesData)
-      })
-      
-    } else if (!this.isTabOpen.actual && selectedTab.id === 2) {
-      await this.getSuppliesBudgetActual(this.year, this.selectedLine.lineId, true).then(() => {
-        this.isTabOpen = { budgetPlan: false, actual: true, comparison: false }
-        this.getSectionData()
-        this.getTotalPrice(this.suppliesData)
-      })
-      
-    } else if (!this.isTabOpen.comparison && selectedTab.id === 3) {
-      await this.getMergedSuppliesActualPlan().then(() => {
-        this.isTabOpen = { budgetPlan: false, actual: false, comparison: true }
-        this.getSectionData()
-        this.getTotalPrice(this.suppliesData)
+
+    const changeTab = async () => {
+      return new Promise<boolean>(async (resolve, reject) => {
+        if (!this.isTabOpen.budgetPlan && selectedTab.id === 1) {
+          this.resetFilterAndSectionData()
+          await this.getSuppliesBudgetPlan(this.year, this.selectedLine.lineId, true).then(() => {
+            this.isTabOpen = { budgetPlan: true, actual: false, comparison: false }
+            this.router.navigate([], { queryParams: { tab: 'Plan' }, queryParamsHandling: 'merge' }).then(() => resolve(true))
+          }).catch(err => reject(err))
+          
+        } else if (!this.isTabOpen.actual && selectedTab.id === 2) {
+          this.resetFilterAndSectionData()
+          await this.getSuppliesBudgetActual(this.year, this.selectedLine.lineId, true).then(() => {
+            this.isTabOpen = { budgetPlan: false, actual: true, comparison: false }
+            this.router.navigate([], { queryParams: { tab: 'Actual' }, queryParamsHandling: 'merge' }).then(() => resolve(true))
+          }).catch(err => reject(err))
+          
+        } else if (!this.isTabOpen.comparison && selectedTab.id === 3) {
+          this.resetFilterAndSectionData()
+          await this.getMergedSuppliesActualPlan().then(() => {
+            this.isTabOpen = { budgetPlan: false, actual: false, comparison: true }
+            this.router.navigate([], { queryParams: { tab: 'Comparison' }, queryParamsHandling: 'merge' }).then(() =>  resolve(true))
+          }).catch(err => reject(err))
+          
+        }
       })
     }
+
+    await changeTab().then(() => {
+      this.getSectionData()
+      this.getTotalPrice(this.suppliesData)
+      const params = this.route.snapshot.queryParams
+      if (params['month'] || params['costCtrId']) {
+        this.onSupplyFilter(null, +params['month'] || -1, +params['costCtrId'] || -1)
+      }
+    })
   }
 
   async getMergedSuppliesActualPlan() {
@@ -407,13 +426,13 @@ export class BudgetInputComponent {
       let actualData: any[] = []
   
       if (this.isTabOpen.budgetPlan) {
-        planData = [...this.suppliesData]
+        planData = [...this.suppliesDataBefore]
         await this.getSuppliesBudgetActual(this.year, this.selectedLine.lineId, true).then(data => {
           actualData = data
         }).catch(err => reject(err))
   
       } else if (this.isTabOpen.actual) {
-        actualData = [...this.suppliesData]
+        actualData = [...this.suppliesDataBefore]
         await this.getSuppliesBudgetPlan(this.year, this.selectedLine.lineId, true).then(data => {
           planData = data
         }).catch((err) => reject(err))
@@ -426,7 +445,7 @@ export class BudgetInputComponent {
           planData = data
         }).catch((err) => reject(err))
       }
-  
+      
       this.suppliesData = this.mergeBudgetData(planData, actualData)
       this.suppliesDataBefore = this.suppliesData.map(a => ({...a}))
       resolve(true)
@@ -459,6 +478,7 @@ export class BudgetInputComponent {
 
   async onFactoryLineChange(event: any) {
     if (event.target.value) {
+      this.router.navigate([], { queryParams: { lineId: +event.target.value } })
       const selectedLineIndex = this.common.getIndexById(this.lineData, +event.target.value, "id")
       this.selectedLine = JSON.parse(this.lineData[selectedLineIndex].value)
       this.refreshFilterSubject.next("line")
@@ -475,11 +495,13 @@ export class BudgetInputComponent {
   onButtonChangeYear(action: string) {
     if (action === "next") this.year += 1
     if (action === "prev") this.year -= 1
+    this.router.navigate([], { queryParams: { year: this.year }, queryParamsHandling: 'merge' })
     this.refreshFilterSubject.next("year")
   }
 
   onYearChange(event: any) {
     if (event.target.value) {
+      this.router.navigate([], { queryParams: { year: this.year }, queryParamsHandling: 'merge' })
       this.refreshFilterSubject.next('year')
     }
   }
@@ -831,9 +853,11 @@ export class BudgetInputComponent {
     if (event != null) {
       if (event.target.id === 'monthFilter') {
         this.selectedMonthFilter = +event.target.value;
+        this.router.navigate([], { queryParams: { month: +event.target.value }, queryParamsHandling: 'merge' })
       }
       if (event.target.id === 'sectionFilter') {
         this.selectedSectionFilter = +event.target.value;
+        this.router.navigate([], { queryParams: { costCtrId: +event.target.value }, queryParamsHandling: 'merge' })
       }
     } else {
       if (month && sectionId) {
@@ -965,5 +989,12 @@ export class BudgetInputComponent {
     });
 
     return mergedData;
+  }
+
+  setActualPlanPercentage(plan: number, actual: number) {
+    if (plan == 0 && actual == 0) return 0
+    const difference = actual - plan
+    const percentage = (difference / plan) * 100;
+    return plan == 0 ? 100 : percentage
   }
 }

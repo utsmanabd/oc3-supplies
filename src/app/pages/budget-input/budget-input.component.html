@@ -60,7 +60,7 @@
     </div>
   </div>
   <div class="card-body">
-    <ul ngbNav #Animation="ngbNav" [activeId]="tabData[0].id" class="nav nav-pills animation-nav nav-justified gap-2 mb-3">
+    <ul ngbNav #Animation="ngbNav" [activeId]="activeTab" class="nav nav-pills animation-nav nav-justified gap-2 mb-3">
       <li *ngFor="let tab of tabData" [ngbNavItem]="tab.id">
           <a ngbNavLink [name]="common.jsonToString(tab)" (click)="onTabChange($event)">
             {{ tab.name }}
@@ -120,7 +120,10 @@
             <td *ngIf="isTabOpen.comparison">{{ common.formatDecimal(common.sumElementFromArray(data.budgeting_data, "actual_qty")) }}</td>
             <td *ngIf="isTabOpen.comparison">{{ common.getRupiahFormat(common.sumElementFromArray(data.budgeting_data, "plan_price")) }}</td>
             <td *ngIf="isTabOpen.comparison">{{ common.getRupiahFormat(common.sumElementFromArray(data.budgeting_data, "actual_price")) }}</td>
-            <td *ngIf="isTabOpen.comparison" class="text-success"><i class="ri ri-arrow-right-up fs-17 align-middle"></i> %25</td>
+            <td *ngIf="isTabOpen.comparison" [ngClass]="setActualPlanPercentage(common.sumElementFromArray(data.budgeting_data, 'plan_price'), common.sumElementFromArray(data.budgeting_data, 'actual_price')) > 0 ? 'text-danger' : 'text-success'" >
+              <i class="ri ri-arrow-right-{{ setActualPlanPercentage(common.sumElementFromArray(data.budgeting_data, 'plan_price'), common.sumElementFromArray(data.budgeting_data, 'actual_price')) > 0 ? 'up' : 'down' }}-line fs-17 align-middle"></i>
+              {{ setActualPlanPercentage(common.sumElementFromArray(data.budgeting_data, "plan_price"), common.sumElementFromArray(data.budgeting_data, "actual_price")).toFixed(2) }}%
+            </td>
             <td>
               <div class="dropdown" ngbDropdown>
                 <a href="javascript:void(0);" class="arrow-none" role="button" id="dropdownMenuLink4"

@@ -4,6 +4,7 @@ import { CommonService } from 'src/app/core/services/common.service';
 import { restApiService } from 'src/app/core/services/rest-api.service';
 import { Subject, debounceTime } from 'rxjs';
 import { Const } from 'src/app/core/static/const';
+import { Router } from '@angular/router';
 
 interface DashboardChart {
   rawData?: any[];
@@ -29,28 +30,45 @@ export class DashboardComponent {
   prodplanData: ProdplanData[] = []
 
   factoryLineBudgetColumnChart!: ChartType;
-  factoryLineBudgetData: DashboardChart = this.emptyChartData()
-  factoryLineActualData: DashboardChart = this.emptyChartData()
+  factoryLineBudgetData = this.emptyChartData()
+  factoryLineActualData = this.emptyChartData()
 
   sectionBudgetBarChart!: ChartType;
-  sectionBudgetData: DashboardChart = this.emptyChartData()
-  sectionActualData: DashboardChart = this.emptyChartData()
+  sectionBudgetData = this.emptyChartData()
+  sectionActualData = this.emptyChartData()
 
   totalLineBudgetDonutChart!: ChartType;
-  totalLineBudgetData: DashboardChart = this.emptyChartData()
+  totalLineBudgetData = this.emptyChartData()
+  totalLineActualData = this.emptyChartData()
   
   supplyBudgetTreemapChart!: ChartType;
-  supplyBudgetData: DashboardChart = this.emptyChartData()
+  supplyBudgetData = this.emptyChartData()
+  supplyActualData = this.emptyChartData()
   
   sectionBudgetMonthHeatmapChart!: ChartType;
-  sectionBudgetMonthHeatmapData: DashboardChart = this.emptyChartData()
-  sectionActualMonthHeatmapData: DashboardChart = this.emptyChartData()
+  sectionBudgetMonthHeatmapData = this.emptyChartData()
+  sectionActualMonthHeatmapData = this.emptyChartData()
 
   sectionBudgetMonthColumnChart!: ChartType
-  sectionBudgetMonthColumnData: DashboardChart = this.emptyChartData()
-  sectionActualMonthColumnData: DashboardChart = this.emptyChartData()
+  sectionBudgetMonthColumnData = this.emptyChartData()
+  sectionActualMonthColumnData = this.emptyChartData()
+  
+  sectionSupplyTreemapChart!: ChartType;
+  sectionSupplyBudgetData = this.emptyChartData()
+  sectionSupplyActualData = this.emptyChartData()
+  
 
-  fiveBiggestBudget: any[] = []
+  lineFiveBiggestSupply: any[] = []
+  lineFiveBiggestBudget: any[] = []
+  lineFiveBiggestActual: any[] = []
+
+  sectionFiveBiggestSupply: any[] = []
+  sectionFiveBiggestBudget: any[] = []
+  sectionFiveBiggestActual: any[] = []
+
+  tabData = [{id: 1, name: 'Budget'}, {id: 2, name: 'Actual'}]
+  isTabOpen = { budget: true, actual: false }
+  activeTab = 1
 
   yearSubject = new Subject<number>()
 
@@ -69,11 +87,12 @@ export class DashboardComponent {
   totalFactoryActual: number = 0;
 
   isBudgetNotEmpty: boolean = false
+  showTreemapLabels = false
 
   @ViewChild("line") line!: ElementRef
   @ViewChild("section") section!: ElementRef
 
-  constructor(public common: CommonService, private apiService: restApiService) {
+  constructor(public common: CommonService, private apiService: restApiService, private router: Router) {
     this.year = new Date().getFullYear()
     this.yearSubject.pipe(debounceTime(350)).subscribe(year => {
       this.ngOnInit()
@@ -87,7 +106,11 @@ export class DashboardComponent {
     await this.getActualProdplanByLine(this.year, this.selectedLine.id)
     await this.getBudgetPerSection(this.year, this.selectedLine.id)
     await this.getActualPerSection(this.year, this.selectedLine.id)
-    await this.getBudgetPerSupply(this.year, this.selectedLine.id)
+    await this.getBudgetPerSupply(this.year, this.selectedLine.id).then(() => {
+      this.lineFiveBiggestSupply = this.lineFiveBiggestBudget
+      this.sectionFiveBiggestSupply = this.sectionFiveBiggestBudget
+    })
+    await this.getActualPerSupply(this.year, this.selectedLine.id)
     await this.getBudgetPerSectionAndMonth(this.year, this.selectedLine.id)
     await this.getActualPerSectionAndMonth(this.year, this.selectedLine.id)
     this._factoryLineBudgetColumnChart('["--vz-primary", "--vz-success"]');
@@ -96,6 +119,7 @@ export class DashboardComponent {
     this._supplyBudgetTreemapChart('["--vz-primary"]');
     this._sectionBudgetMonthHeatmapChart('["--vz-success", "--vz-card-bg-custom"]');
     this._sectionBudgetMonthColumnChart('["--vz-primary", "--vz-success"]');
+    this._sectionSupplyTreemapChart('["--vz-primary"]')
   }
 
   async getBudgetPerLine(year: number) {
@@ -294,19 +318,56 @@ export class DashboardComponent {
       this.apiService.getBudgetPerSupply(year, lineId).subscribe({
         next: (res: any) => {
           let data: any[] = res.data.sort((a: any, b: any) => b.price - a.price)
-          this.fiveBiggestBudget = [...data].slice(0, 5)
+          this.lineFiveBiggestBudget = [...data].slice(0, 5)
 
           this.supplyBudgetData = {
             rawData: data,
-            categories: [...data].map(item => item.material_desc),
-            series: [...data].map(item => {
-              return { x: item.material_desc, y: item.price }
-            })
+            series: [...data].map(item => ({ x: item.material_desc, y: item.price }))
           }
+
+          const filteredSectionSupply = [...data].filter(item => item.section == this.selectedSection.name)
+          this.sectionSupplyBudgetData = {
+            series: [...filteredSectionSupply].map(item => ({x: item.material_desc, y: item.price}))
+          }
+          this.sectionFiveBiggestBudget = [...filteredSectionSupply].slice(0, 5)
+          
         },
         error: (err) => {
           this.isLoading = false
           this.common.showServerErrorAlert(Const.ERR_GET_MSG("Budget Per Supply"), err)
+          reject(err)
+        },
+        complete: () => {
+          this.isLoading = false;
+          resolve(true)
+        }
+      })
+    })
+  }
+
+  async getActualPerSupply(year: number, lineId: number) {
+    return new Promise((resolve, reject) => {
+      this.isLoading = true;
+      this.apiService.getActualPerSupply(year, lineId).subscribe({
+        next: (res: any) => {
+          let data: any[] = res.data.sort((a: any, b: any) => b.price - a.price)
+          this.lineFiveBiggestActual = [...data].slice(0, 5)
+
+          this.supplyActualData = {
+            rawData: data,
+            series: [...data].map(item => ({ x: item.material_desc, y: item.price }))
+          }
+
+          const filteredSectionSupply = [...data].filter(item => item.section == this.selectedSection.name)
+          this.sectionSupplyActualData = {
+            series: [...filteredSectionSupply].map(item => ({x: item.material_desc, y: item.price}))
+          }
+          this.sectionFiveBiggestActual = [...filteredSectionSupply].slice(0, 5)
+          
+        },
+        error: (err) => {
+          this.isLoading = false
+          this.common.showServerErrorAlert(Const.ERR_GET_MSG("Actual Per Supply"), err)
           reject(err)
         },
         complete: () => {
@@ -451,12 +512,25 @@ export class DashboardComponent {
     await this.getBudgetPerSection(this.year, lineId)
     await this.getActualPerSection(this.year, lineId).then(() => {
       this.setSectionBudgetChartValue()
-      this.setTotaLineBudgetChartValue()
+      this.setTotaLineBudgetChartValue(this.isTabOpen.actual)
     })
-    await this.getBudgetPerSupply(this.year, lineId).then(() => this.setSupplyBudgetChartValue())
+    await this.getBudgetPerSupply(this.year, lineId).then(() => {
+      if (this.isTabOpen.budget) {
+        this.lineFiveBiggestSupply = this.lineFiveBiggestBudget
+        this.sectionFiveBiggestSupply = this.sectionFiveBiggestBudget
+        this.setSupplyBudgetChartValue()
+      }
+    })
+    await this.getActualPerSupply(this.year, lineId).then(() => {
+      if (this.isTabOpen.actual) {
+        this.lineFiveBiggestSupply = this.lineFiveBiggestActual
+        this.sectionFiveBiggestSupply = this.sectionFiveBiggestActual
+        this.setSupplyBudgetChartValue(true)
+      }
+    })
     await this.getBudgetPerSectionAndMonth(this.year, lineId)
     await this.getActualPerSectionAndMonth(this.year, lineId).then(() => {
-      this.setSupplyBudgetMonthChartValue()
+      this.setSupplyBudgetMonthChartValue(this.isTabOpen.actual)
       this.setBudgetMonthSectionChartValue()
     })
     
@@ -477,17 +551,29 @@ export class DashboardComponent {
     }
   }
 
-  setTotaLineBudgetChartValue() {
-    this.totalLineBudgetDonutChart.series = this.sectionBudgetData.series
-    this.totalLineBudgetDonutChart.labels = this.sectionBudgetData.categories
+  setTotaLineBudgetChartValue(isActual = false) {
+    this.totalLineBudgetDonutChart.series = isActual ? this.sectionActualData.series : this.sectionBudgetData.series
+    this.totalLineBudgetDonutChart.labels = isActual ? this.sectionActualData.categories : this.sectionBudgetData.categories
   }
 
-  setSupplyBudgetChartValue() {
-    this.supplyBudgetTreemapChart.series = [{ data: this.supplyBudgetData.series }]
+  setSupplyBudgetChartValue(isActual = false) {
+    this.supplyBudgetTreemapChart.series = [{ data: isActual ? this.supplyActualData.series : this.supplyBudgetData.series }]
+    this.supplyBudgetTreemapChart.tooltip = {
+      x: {
+        show: true,
+        formatter: (val: any, opt: any) => {
+          const data = isActual ? this.supplyActualData.rawData! : this.supplyBudgetData.rawData!
+          return `${data[opt.dataPointIndex].section}`
+        }
+      },
+      y: {
+        formatter: (val: any, opt: any) => this.common.getRupiahFormat(+val)
+      },
+    }
   }
 
-  setSupplyBudgetMonthChartValue() {
-    this.sectionBudgetMonthHeatmapChart.series = this.sectionBudgetMonthHeatmapData.series
+  setSupplyBudgetMonthChartValue(isActual = false) {
+    this.sectionBudgetMonthHeatmapChart.series = isActual ? this.sectionActualMonthHeatmapData.series : this.sectionBudgetMonthHeatmapData.series
   }
 
   setBudgetMonthSectionChartValue() {
@@ -498,10 +584,32 @@ export class DashboardComponent {
     this.sectionBudgetMonthColumnChart.xaxis = { categories: this.sectionBudgetMonthColumnData.categories }
   }
 
+  setSectionSupplyChartValue(isActual = false) {
+    this.sectionSupplyTreemapChart.series = [{ data: isActual ? this.sectionSupplyActualData.series : this.sectionSupplyBudgetData.series }]
+    this.sectionSupplyTreemapChart.tooltip = {
+      x: {
+        show: true,
+        formatter: (val: any, opt: any) => {
+          return `${this.selectedSection.name}`
+        }
+      },
+      y: {
+        formatter: (val: any, opt: any) => this.common.getRupiahFormat(+val)
+      },
+    }
+  }
+
+  setProdplanPercentage(plan: number, actual: number) {
+    const difference = actual - plan
+    const percentage = (difference / plan) * 100;
+    return (plan && actual) == 0 ? 0 : percentage
+  }
+
   onSectionChange(sectionData: any) {
     this.selectedSection = { name: sectionData.section, id: sectionData.sectionId }
     const budgetData = [...this.sectionBudgetMonthHeatmapData.rawData!].filter(item => item.cost_ctr_id === sectionData.sectionId)
     const actualData = [...this.sectionActualMonthHeatmapData.rawData!].filter(item => item.cost_ctr_id === sectionData.sectionId)
+
     this.sectionBudgetMonthColumnData = {
       rawData: budgetData,
       series: [...budgetData].map(item => item.price),
@@ -512,20 +620,35 @@ export class DashboardComponent {
       series: [...actualData].map(item => item.price),
       categories: [...budgetData].map(item => this.common.getSimpleMonthName(item.month))
     }
-    
-    this.setBudgetMonthSectionChartValue()
-  }
 
-  setProdplanPercentage(plan: number, actual: number) {
-    const difference = actual - plan
-    const percentage = (difference / plan) * 100;
-    return (plan && actual) == 0 ? 0 : percentage
+    this.sectionFiveBiggestActual = [...this.supplyActualData.rawData!]
+      .filter(item => item.section === sectionData.section)
+      .slice(0, 5)
+    this.sectionFiveBiggestBudget = [...this.supplyBudgetData.rawData!]
+      .filter(item => item.section === sectionData.section)
+      .slice(0, 5)
+    this.sectionFiveBiggestSupply = this.isTabOpen.budget ? this.sectionFiveBiggestBudget : this.sectionFiveBiggestActual
+    this.setBudgetMonthSectionChartValue()
+
+    this.sectionSupplyActualData.series = [...this.supplyActualData.rawData!]
+      .filter(item => item.section == sectionData.section)
+      .map(item => ({x: item.material_desc, y: item.price}))
+    this.sectionSupplyBudgetData.series = [...this.supplyBudgetData.rawData!]
+      .filter(item => item.section == sectionData.section)
+      .map(item => ({x: item.material_desc, y: item.price}))
+    
+    setTimeout(() => {
+      this.setSectionSupplyChartValue(this.isTabOpen.actual)
+    }, 300)
+    
   }
 
   onTreemapShowLabels(event: any) {
+    this.showTreemapLabels = !this.showTreemapLabels ? true : false 
     this.isLoading = true
     setTimeout(() => {
       this.supplyBudgetTreemapChart.dataLabels = { enabled: event.target.checked }
+      this.sectionSupplyTreemapChart.dataLabels = { enabled: event.target.checked }
       this.isLoading = false;
     }, 50)
   }
@@ -570,6 +693,32 @@ export class DashboardComponent {
 
   onYearChange(event: any) {
     if (event.target.value) this.yearSubject.next(this.year)
+  }
+
+  onBudgetActualTabChange(event: any) {
+    const tab = JSON.parse(event.target.name)
+    
+    if (tab.name === 'Actual') {
+      this.lineFiveBiggestSupply = this.lineFiveBiggestActual
+      this.sectionFiveBiggestSupply = this.sectionFiveBiggestActual
+      this.setTotaLineBudgetChartValue(true)
+      this.setSupplyBudgetChartValue(true)
+      this.setSupplyBudgetMonthChartValue(true)
+      this.setSectionSupplyChartValue(true)
+      this.isTabOpen = {actual: true, budget: false}
+      this.activeTab = 2
+    } 
+    else if (tab.name === 'Budget') {
+      this.lineFiveBiggestSupply = this.lineFiveBiggestBudget
+      this.sectionFiveBiggestSupply = this.sectionFiveBiggestBudget
+      this.setTotaLineBudgetChartValue()
+      this.setSupplyBudgetChartValue()
+      this.setSupplyBudgetMonthChartValue()
+      this.setSectionSupplyChartValue()
+      this.isTabOpen = {actual: false, budget: true}
+      this.activeTab = 1
+    }
+    
   }
 
   private _factoryLineBudgetColumnChart(colors: any) {
@@ -746,7 +895,7 @@ export class DashboardComponent {
       labels: this.sectionBudgetData.categories,
       chart: {
         type: "donut",
-        height: 300,
+        height: 250,
       },
       plotOptions: {
         pie: {
@@ -758,12 +907,12 @@ export class DashboardComponent {
               show: true,
               name: {
                 show: true,
-                fontSize: '18px',
+                fontSize: '16px',
                 offsetY: -5,
               },
               value: {
                 show: true,
-                fontSize: '18px',
+                fontSize: '16px',
                 color: '#343a40',
                 fontWeight: 500,
                 offsetY: 5,
@@ -771,7 +920,7 @@ export class DashboardComponent {
               },
               total: {
                 show: true,
-                fontSize: '13px',
+                fontSize: '12px',
                 label: 'Total value',
                 color: '#9599ad',
                 fontWeight: 500,
@@ -888,6 +1037,20 @@ export class DashboardComponent {
         toolbar: {
           show: false,
         },
+        events: {
+          click: (event: any, context: any, config: any) => {
+            const index = config.dataPointIndex
+            if (index !== -1) {
+              this.router.navigate(['supplies'], {queryParams: {
+                lineId: this.selectedLine.id,
+                year: this.year,
+                month: this.sectionActualMonthColumnData.rawData![index].month,
+                costCtrId: this.sectionActualMonthColumnData.rawData![index].cost_ctr_id,
+                tab: config.seriesIndex == 0 ? 'Plan' : 'Actual'
+              }})
+            }
+          }
+        }
       },
       plotOptions: {
         bar: {
@@ -939,6 +1102,38 @@ export class DashboardComponent {
         },
         y: {
           formatter: (val: any) => this.common.getRupiahFormat(+val)
+        },
+      },
+    };
+  }
+
+  private _sectionSupplyTreemapChart(colors: any) {
+    colors = this.getChartColorsArray(colors);
+    this.sectionSupplyTreemapChart = {
+      series: [{
+        data: this.sectionSupplyBudgetData.series
+      }],
+      legend: {
+        show: false,
+      },
+      chart: {
+        height: 350,
+        type: "treemap",
+        toolbar: {
+          show: false,
+        },
+      },
+      colors: colors,
+      dataLabels: {
+        enabled: false
+      },
+      tooltip: {
+        x: {
+          show: true,
+          formatter: (val: any, opt: any) => `${this.selectedSection.name}`
+        },
+        y: {
+          formatter: (val: any, opt: any) => this.common.getRupiahFormat(+val)
         },
       },
     };
