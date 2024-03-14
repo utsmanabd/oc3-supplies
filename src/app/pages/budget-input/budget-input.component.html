@@ -77,13 +77,13 @@
                 <label class="form-check-label" for="check"></label>
               </div>
             </th>
-            <th *ngFor="let col of budgetPlanTableCol" scope="col">{{ col }}</th>
+            <th *ngFor="let item of budgetPlanTableCol" class="{{ item.name ? 'sort' : '' }}" scope="col" (click)="sort(item)">{{ item.col }}</th>
           </tr>
           <tr *ngIf="isTabOpen.actual">
-            <th *ngFor="let col of budgetActualTableCol" scope="col">{{ col }}</th>
+            <th *ngFor="let item of budgetActualTableCol" class="{{ item.name ? 'sort' : '' }}" scope="col" (click)="sort(item)">{{ item.col }}</th>
           </tr>
           <tr *ngIf="isTabOpen.comparison">
-            <th *ngFor="let col of comparisonTableCol" scope="col">{{ col }}</th>
+            <th *ngFor="let item of comparisonTableCol" class="{{ item.name ? 'sort' : '' }}"  scope="col" (click)="sort(item)">{{ item.col }}</th>
           </tr>
         </thead>
         <tbody>

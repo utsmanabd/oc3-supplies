@@ -107,6 +107,7 @@ export class DashboardComponent {
     await this.getBudgetPerSection(this.year, this.selectedLine.id)
     await this.getActualPerSection(this.year, this.selectedLine.id)
     await this.getBudgetPerSupply(this.year, this.selectedLine.id).then(() => {
+      this.showTreemapLabels = false;
       this.lineFiveBiggestSupply = this.lineFiveBiggestBudget
       this.sectionFiveBiggestSupply = this.sectionFiveBiggestBudget
     })
@@ -698,7 +699,7 @@ export class DashboardComponent {
   onBudgetActualTabChange(event: any) {
     const tab = JSON.parse(event.target.name)
     
-    if (tab.name === 'Actual') {
+    if (!this.isTabOpen.actual && tab.name === 'Actual') {
       this.lineFiveBiggestSupply = this.lineFiveBiggestActual
       this.sectionFiveBiggestSupply = this.sectionFiveBiggestActual
       this.setTotaLineBudgetChartValue(true)
@@ -708,7 +709,7 @@ export class DashboardComponent {
       this.isTabOpen = {actual: true, budget: false}
       this.activeTab = 2
     } 
-    else if (tab.name === 'Budget') {
+    else if (!this.isTabOpen.budget && tab.name === 'Budget') {
       this.lineFiveBiggestSupply = this.lineFiveBiggestBudget
       this.sectionFiveBiggestSupply = this.sectionFiveBiggestBudget
       this.setTotaLineBudgetChartValue()

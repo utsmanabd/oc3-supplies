@@ -7,6 +7,11 @@ import { Const } from 'src/app/core/static/const';
 import { Material } from './material.model';
 import { ActivatedRoute, Router } from '@angular/router';
 
+interface Column {
+  name: string | null;
+  col: string;
+}
+
 @Component({
   selector: 'app-budget-input',
   templateUrl: './budget-input.component.html',
@@ -17,9 +22,41 @@ export class BudgetInputComponent {
   
   monthData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
   sectionData: any[] = []
-  budgetPlanTableCol = ['Section / Cost Center', 'Material Code', 'Material Description', 'Calculation by', 'UOM', 'Average Price', 'BOM', 'Total Quantity', 'Total Price', ' ']
-  budgetActualTableCol = ['#', 'Section / Cost Center', 'Material Code', 'Material Description', 'UOM', 'Total Quantity', 'Total Price', ' ']
-  comparisonTableCol = ['#', 'Section / Cost Center', 'Material Code', 'Material Description', 'UOM', 'Plan Quantity', 'Actual Quantity', 'Plan Price', 'Actual Price', '%', ' ']
+  budgetPlanTableCol: Column[] = [
+    {name: 'section', col: 'Section / Cost Center'},
+    {name: 'material_code', col: 'Material Code'},
+    {name: 'material_desc', col: 'Material Description'},
+    {name: 'calculation_by', col: 'Calculation'},
+    {name: 'uom', col: 'UOM'},
+    {name: 'average_price', col: 'Avg Price'},
+    {name: 'bom', col: 'BOM'},
+    {name: 'budgeting_data', col: 'Total Qty'},
+    {name: 'budgeting_data', col: 'Total Price'},
+    {name: null, col: ' '},
+  ]
+  budgetActualTableCol: Column[] = [
+    {name: null, col: '#'},
+    {name: 'section', col: 'Section / Cost Center'},
+    {name: 'material_code', col: 'Material Code'},
+    {name: 'material_desc', col: 'Material Description'},
+    {name: 'uom', col: 'UOM'},
+    {name: 'budgeting_data', col: 'Total Qty'},
+    {name: 'budgeting_data', col: 'Total Price'},
+    {name: null, col: ' '}
+  ]
+  comparisonTableCol: Column[] = [
+    {name: null, col: '#'},
+    {name:'section', col: 'Section / Cost Center'},
+    {name:'material_code', col: 'Material Code'},
+    {name:'material_desc', col: 'Material Description'},
+    {name: 'uom', col: 'UOM'},
+    {name: 'budgeting_data', col: 'Plan Qty'},
+    {name: 'budgeting_data', col: 'Actual Qty'},
+    {name: 'budgeting_data', col: 'Plan Price'},
+    {name: 'budgeting_data', col: 'Actual Price'},
+    {name: 'budgeting_data', col: '%'},
+    {name: null, col: ' '}
+  ]
   index: number = 0;
 
   _year: number = 0
@@ -81,6 +118,9 @@ export class BudgetInputComponent {
   selectedMonthFilter = -1
   selectedSectionFilter = -1
   isFilterChange = false;
+
+  sortedColumn: string = '';
+  isAscending: boolean = true;
 
   private refreshFilterSubject = new Subject<string>()
 
@@ -996,5 +1036,75 @@ export class BudgetInputComponent {
     const difference = actual - plan
     const percentage = (difference / plan) * 100;
     return plan == 0 ? 100 : percentage
+  }
+
+  sort(colData: Column) {
+    if (colData.name) {
+      console.log(colData);
+      
+      const column = colData.name
+      if (this.sortedColumn === colData.col) {
+        this.isAscending = !this.isAscending;
+      } else {
+        this.sortedColumn = colData.col;
+        this.isAscending = true;
+      }
+
+      console.log("sort column ", this.sortedColumn);
+      console.log("is ascending ", this.isAscending);
+  
+      this.suppliesData.sort((a, b) => {
+        let aValue = a[column];
+        let bValue = b[column];
+  
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return this.isAscending ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        } else if (Array.isArray(aValue) && Array.isArray(bValue)) {
+          let A = 0
+          let B = 0
+
+          if (colData.col === 'Total Qty') {
+            A = this.common.sumElementFromArray(aValue, 'quantity')
+            B = this.common.sumElementFromArray(bValue, 'quantity')
+          }
+          if (colData.col === 'Total Price') {
+            A = this.common.sumElementFromArray(aValue, 'price')
+            B = this.common.sumElementFromArray(bValue, 'price')
+          }
+          if (colData.col === 'Plan Qty') {
+            A = this.common.sumElementFromArray(aValue, 'plan_qty')
+            B = this.common.sumElementFromArray(bValue, 'plan_qty')
+          }
+          if (colData.col === 'Actual Qty') {
+            A = this.common.sumElementFromArray(aValue, 'actual_qty')
+            B = this.common.sumElementFromArray(bValue, 'actual_qty')
+          }
+          if (colData.col === 'Plan Price') {
+            A = this.common.sumElementFromArray(aValue, 'plan_price')
+            B = this.common.sumElementFromArray(bValue, 'plan_price')
+          }
+          if (colData.col === 'Actual Price') {
+            A = this.common.sumElementFromArray(aValue, 'actual_price')
+            B = this.common.sumElementFromArray(bValue, 'actual_price')
+          }
+
+          if (colData.col === '%') {
+            A = this.setActualPlanPercentage(
+              this.common.sumElementFromArray(aValue, 'plan_price'),
+              this.common.sumElementFromArray(aValue, 'actual_price')
+            )
+            B = this.setActualPlanPercentage(
+              this.common.sumElementFromArray(bValue, 'plan_price'),
+              this.common.sumElementFromArray(bValue, 'actual_price')
+            )
+          }
+
+          return this.isAscending ? A - B : B - A
+        } else {
+          return this.isAscending ? aValue - bValue : bValue - aValue;
+        }
+      });
+    }
+    
   }
 }
