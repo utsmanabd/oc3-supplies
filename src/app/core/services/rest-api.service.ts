@@ -48,18 +48,18 @@ export class restApiService {
     if (this.isCachedDataExists(cacheKey)) {
       return of(this.getCachedData(cacheKey))
     } else {
-      return this.http.get(GlobalComponent.API_URL + urlParams, httpOptions).pipe(
+      return this.http.get(GlobalComponent.MASTER_API_URL + urlParams, httpOptions).pipe(
         tap((data) => this.setCachedData(cacheKey, data))
       )
     }
   }
 
   requestHttpGet(urlParams: string): Observable<any> {
-    return this.http.get(GlobalComponent.API_URL + urlParams, httpOptions)
+    return this.http.get(GlobalComponent.MASTER_API_URL + urlParams, httpOptions)
   }
 
   requestHttpPost(urlParams: string, data: any): Observable<any> {
-    return this.http.post(GlobalComponent.API_URL + urlParams, { form_data: data }, httpOptions).pipe(
+    return this.http.post(GlobalComponent.MASTER_API_URL + urlParams, { form_data: data }, httpOptions).pipe(
       tap(() => {
         this.resetCachedData()
       })
@@ -67,7 +67,7 @@ export class restApiService {
   }
 
   requestHttpPut(urlParams: string, id: any, data: any): Observable<any> {
-    return this.http.put(GlobalComponent.API_URL + urlParams + `/${id}`, { form_data: data }, httpOptions).pipe(
+    return this.http.put(GlobalComponent.MASTER_API_URL + urlParams + `/${id}`, { form_data: data }, httpOptions).pipe(
       tap(() => this.resetCachedData())
     )
   }
@@ -195,7 +195,7 @@ export class restApiService {
     if (term === '') {
       return of([])
     }
-    return this.http.post(GlobalComponent.API_URL + "material/search", { search: term }, httpOptions)
+    return this.http.post(GlobalComponent.MASTER_API_URL + "material/search", { search: term }, httpOptions)
       .pipe(
         map((res: any) => Array.isArray(res.data) 
           ? res.data
@@ -220,7 +220,7 @@ export class restApiService {
     if (term === '') {
       return of([])
     }
-    return this.http.post(GlobalComponent.API_URL + "costctr/search", { search: term }, httpOptions)
+    return this.http.post(GlobalComponent.MASTER_API_URL + "costctr/search", { search: term }, httpOptions)
       .pipe(
         map((res: any) => Array.isArray(res.data) 
           ? res.data
@@ -300,6 +300,19 @@ export class restApiService {
 
   getActualPerSupply(year: number, lineId: number) {
     return this.requestHttpGet(`actual/supply-by-line?year=${year}&lineId=${lineId}`)
+  }
+
+  // Import XLSX
+  uploadActualXlsx(file: FormData) {
+    return this.http.post(GlobalComponent.MASTER_API_URL + 'xlsx/actual', file).pipe(
+      tap(() => this.resetCachedData())
+    )
+  }
+
+  uploadPlanXlsx(file: FormData) {
+    return this.http.post(GlobalComponent.MASTER_API_URL + 'xlsx/plan', file).pipe(
+      tap(() => this.resetCachedData())
+    )
   }
 
 }

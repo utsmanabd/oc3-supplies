@@ -168,17 +168,39 @@ export class CommonService {
     document.documentElement.scrollTop = 0;
   }
 
+  // Table Pagination
+  getComputedRowNumber(globalIndex: number, index: number): number {
+    return globalIndex + index + 1;
+  }
+
+  calculateActivePages(currentPage: number, totalPages: number): number[] {
+    const visiblePages = 5;
+    const activePages: number[] = [];
+
+    const startPage = Math.max(
+      1,
+      currentPage - Math.floor(visiblePages / 2)
+    );
+    const endPage = Math.min(totalPages, startPage + visiblePages - 1);
+
+    for (let page = startPage; page <= endPage; page++) {
+      activePages.push(page);
+    }
+
+    return activePages;
+  }
+
   // -- Show alerts
-  showSuccessAlert(message?: string, cancelMessage?: string) {
+  showSuccessAlert(message?: string, cancelText?: string, confirmText?: string) {
     return Swal.fire({
       title: 'Success!',
       text: message ? message : 'Great job!',
       icon: 'success',
-      showDenyButton: cancelMessage ? true : false,
+      showDenyButton: cancelText ? true : false,
       denyButtonColor: 'rgb(243, 78, 78)',
       confirmButtonColor: "rgb(3, 142, 220)",
-      confirmButtonText: 'OK',
-      denyButtonText: cancelMessage ? cancelMessage : 'Cancel'
+      confirmButtonText: confirmText ? confirmText : 'OK',
+      denyButtonText: cancelText ? cancelText : 'Cancel'
     })
   }
 
@@ -210,5 +232,20 @@ export class CommonService {
       confirmButtonColor: "rgb(3, 142, 220)",
       confirmButtonText: confirmButton ? confirmButton : "Delete",
     })
+  }
+
+  showCustomAlert(title?: string, content?: string, confirmButtonText?: string, showCancelButton?: boolean, cancelButtonText?: string) {
+    return Swal.fire({
+      title: title ? title : 'Alert',
+      icon: 'warning',
+      html: content ? content : 'Are you sure?',
+      showCloseButton: true,
+      showCancelButton: showCancelButton ? true : false,
+      focusConfirm: false,
+      confirmButtonText: confirmButtonText ? confirmButtonText : 'Ok',
+      cancelButtonText: cancelButtonText ? cancelButtonText : 'Cancel',
+      confirmButtonColor: 'rgb(3, 142, 220)',
+      cancelButtonColor: 'rgb(243, 78, 78)',
+    });
   }
 }

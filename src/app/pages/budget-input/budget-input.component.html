@@ -26,7 +26,10 @@
     <div class="row g-4">
       <div class="col-sm-auto">
         <div class="d-flex gap-1">
-          <button [disabled]="!isTabOpen.budgetPlan" (click)="openUpdateModal(updateModal)" type="button" class="btn btn-primary add-btn" id="create-btn">
+          <button [disabled]="isTabOpen.comparison" (click)="openUpdateModal(importModal)" type="button" class="btn btn-primary add-btn" id="import-btn">
+            <i class="ri-file-upload-line align-bottom me-1"></i> Import
+          </button>
+          <button *ngIf="isTabOpen.budgetPlan" (click)="openUpdateModal(updateModal)" type="button" class="btn btn-success add-btn" id="create-btn">
             <i class="ri-add-line align-bottom me-1"></i> Add
           </button>
           <button class="btn btn-soft-danger" (click)="onDeleteSupplyBudget()"><i
@@ -289,6 +292,103 @@
   <div class="modal-footer">
     <small *ngIf="isFormInvalid" class="form-text text-danger">Please fill all the field above!</small>
     <button type="button" class="btn btn-success" (click)="onAddSupply()">Save</button>
+  </div>
+</ng-template>
+
+<ng-template #importModal let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">Import {{ isTabOpen.actual ? 'Actual' : 'Plan' }} Supplies</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+    <div class="mb-3">
+      <label for="file" class="form-label">Select file</label>
+      <input class="form-control" id="file" type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (change)="onXLSXFileChange($event)">
+    </div>
+    <small><a href="{{ isTabOpen.actual ? actualXlsxLink : planXlsxLink }}">Download XLSX template</a></small>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-light" (click)="modal.dismiss()">Cancel</button>
+    <button *ngIf="!isLoading" type="button" class="btn btn-success" (click)="onImportActualSupply(isTabOpen.actual ? 'Actual' : 'Plan')" [disabled]="!uploadedFiles">Import</button>
+    <button *ngIf="isLoading" type="button" class="btn btn-success btn-load" disabled>
+      <span class="d-flex align-items-center">
+          <span class="spinner-border flex-shrink-0" role="status">
+              <span class="visually-hidden">Loading...</span>
+          </span>
+          <span class="flex-grow-1 ms-2">
+              Loading...
+          </span>
+      </span>
+    </button>
+</div>
+</ng-template>
+
+<ng-template #importDetailModal let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title">Import Details</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+    <ng-container *ngIf="notInclude.lineSection?.length != 0;else alertProblem">
+      <div class="mb-3">
+        <label for="">Not Included Section (Outside of Production Line)</label>
+        <ol class="list-group list-group-numbered">
+          <li class="list-group-item" *ngFor="let item of notInclude.lineSection">
+              {{ item.section }} <span class="ms-1 text-muted"><small>({{ item.cost_ctr }})</small></span>
+          </li>
+        </ol>
+      </div>
+      <small class="text-warning">*Data with the following Section cannot be added because the Section has not been / is not registered with the Production Line.</small>
+    </ng-container>
+    <ng-template #alertProblem>
+      <div class="mb-3" *ngIf="notInclude.duplicateSupply?.length != 0">
+        <label>Duplicates Supply Found</label>
+        <ol class="list-group list-group-numbered">
+          <li class="list-group-item" *ngFor="let item of notInclude.duplicateSupply"> {{ item.material_desc }}
+            <span class="ms-1 text-secondary"><small>/ {{ item.cost_ctr }}-{{ item.material_code }}</small></span>
+            <span class="ms-1 text-muted"><small>({{ item.year }})</small></span>
+          </li>
+        </ol>
+      </div>
+      <div class="mb-3" *ngIf="notInclude.prodplan?.length != 0">
+        <label>Unplanned Prodplan</label>
+        <ul class="list-group">
+          <li class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let item of notInclude.prodplan;let i = index">
+            {{ i + 1 }}. {{ item.line }} ({{ item.year }}) 
+            <span class="ms-1 text-muted">
+              <a (click)="modalService.dismissAll()" [routerLink]="['../prodplan']" [queryParams]="{lineId: item.line_id, year: item.year}">Create</a>
+            </span>
+          </li>
+        </ul>
+      </div>
+      <div class="mb-3" *ngIf="notInclude.calculation?.length != 0">
+        <label>Undefined Calculation Method</label>
+        <ol class="list-group list-group-numbered">
+          <li ngFor class="list-group-item" *ngFor="let item of notInclude.calculation">{{ item }}</li>
+        </ol>
+      </div>
+      <div class="mb-3" *ngIf="notInclude.costCenter?.length != 0">
+        <label>Undefined Cost Center</label>
+        <ol class="list-group list-group-numbered">
+          <li class="list-group-item" *ngFor="let item of notInclude.costCenter">{{ item }}</li>
+        </ol>
+      </div>
+      <div class="mb-3" *ngIf="notInclude.material?.length != 0">
+        <label>Undefined Material</label>
+        <ol *ngIf="isTabOpen.actual" class="list-group list-group-numbered">
+          <li class="list-group-item" *ngFor="let item of notInclude.material">
+              {{ item.material_desc }} <span class="ms-1 text-muted"><small>({{ item.material_code }})</small></span>
+          </li>
+        </ol>
+        <ol *ngIf="isTabOpen.budgetPlan" class="list-group list-group-numbered">
+          <li class="list-group-item" *ngFor="let item of notInclude.material">{{ item }}</li>
+        </ol>
+      </div>
+      <small class="text-danger">*You must fix or add the above data into the Master Data before proceeding.</small>
+    </ng-template>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-light" (click)="modal.dismiss()">Close</button>
+    </div>
   </div>
 </ng-template>
 

@@ -1,4 +1,4 @@
-import { Component, TemplateRef } from '@angular/core';
+import { Component, TemplateRef, ViewChild } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Observable, OperatorFunction, Subject, debounceTime, distinctUntilChanged, of, switchMap, tap } from 'rxjs';
 import { CommonService } from 'src/app/core/services/common.service';
@@ -6,6 +6,7 @@ import { restApiService } from 'src/app/core/services/rest-api.service';
 import { Const } from 'src/app/core/static/const';
 import { Material } from './material.model';
 import { ActivatedRoute, Router } from '@angular/router';
+import { GlobalComponent } from 'src/app/global-component';
 
 interface Column {
   name: string | null;
@@ -18,6 +19,9 @@ interface Column {
   styleUrls: ['./budget-input.component.scss']
 })
 export class BudgetInputComponent {
+  actualXlsxLink = GlobalComponent.API_URL + `file/xlsx/actual-template`
+  planXlsxLink = GlobalComponent.API_URL + `file/xlsx/plan-template`
+
   tabData = [{id: 1, name: 'Budget Plan'}, {id: 2, name: 'Actual'}, {id: 3, name: 'Comparison'}]
   
   monthData = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
@@ -69,6 +73,17 @@ export class BudgetInputComponent {
     id: 0,
     name: '',
     detail: '',
+  }
+
+  uploadedFiles: File | null = null
+
+  notInclude: { duplicateSupply?: any[], prodplan?: any[], calculation?: string[], costCenter?: number[], material?: any[], lineSection?: any[]} = {
+    duplicateSupply: [],
+    prodplan: [],
+    calculation: [],
+    costCenter: [],
+    material: [],
+    lineSection: []
   }
 
   detailModalForm: { concatenate: string, materialDesc: string, calculationBy: string, budgetingData: any[] } = {
@@ -147,10 +162,12 @@ export class BudgetInputComponent {
     tap(() => this.costCenterSearching = false)
   )
 
+  @ViewChild('importDetailModal') importDetailModal: any
+
   constructor(
     private apiService: restApiService, 
     public common: CommonService, 
-    private modalService: NgbModal, 
+    public modalService: NgbModal, 
     private router: Router,
     private route: ActivatedRoute
   ) {
@@ -589,6 +606,7 @@ export class BudgetInputComponent {
     this.avgPrice = null;
     this.isNotHaveAveragePrice = false;
     this.isFormInvalid = false;
+    this.uploadedFiles = null
   }
 
   onAddSupply() {
@@ -603,6 +621,78 @@ export class BudgetInputComponent {
       }
     } else {
       this.isFormInvalid = true
+    }
+  }
+
+  onXLSXFileChange(event: any) {
+    this.uploadedFiles = event.target.files[0]
+  }
+
+  onImportActualSupply(type: string) {
+    if (this.uploadedFiles) {
+      const handleResponse = (res: any) => {
+        if (!res.status) {
+          this.common.showCustomAlert("Operation Cancelled", `${res.data.message}`, res.data.invalid_column ? 'Close' : 'See Details').then((result) => {
+            if (result.value && !res.data.invalid_column) {
+              this.notInclude = {
+                duplicateSupply: res.data.duplicates_supply || [],
+                prodplan: res.data.not_included_prodplan || [],
+                calculation: res.data.not_included_calculation || [],
+                costCenter: res.data.not_included_cost_ctr || [],
+                material: res.data.not_included_material || [],
+                lineSection: []
+              }
+              
+              this.modalService.open(this.importDetailModal, { ariaLabelledBy: 'modal-basic-title', centered: true , scrollable: true})
+            }
+          })
+        } else {
+          this.common.showSuccessAlert("Data Actual Imported Successfuly", "Close", res.data.not_included_section.length > 0 ? "See Details" : "Ok").then((result) => {
+            if (result.isConfirmed && res.data.not_included_section.length > 0) {
+              this.notInclude = {
+                duplicateSupply: [],
+                prodplan: [],
+                calculation: [],
+                costCenter: [],
+                material: [],
+                lineSection: res.data.not_included_section
+              }
+              this.modalService.open(this.importDetailModal, { ariaLabelledBy: 'modal-basic-title', centered: true , scrollable: true})
+            }
+          })
+          this.refreshFilterSubject.next(this.isFilterChange ? "filterChange" : "Upload Actual")
+        }
+      }
+
+      const formData = new FormData()
+      formData.append("file", this.uploadedFiles)
+      this.isLoading = true
+
+      if (type === 'Actual') {
+        this.apiService.uploadActualXlsx(formData).subscribe({
+          next: (res: any) => {
+            this.isLoading = false
+            this.modalService.dismissAll()
+            handleResponse(res)
+          },
+          error: (err) => {
+            this.isLoading = false
+            this.common.showErrorAlert(Const.ERR_INSERT_MSG('Actual'), err)
+          }
+        })
+      } else if (type === 'Plan') {
+        this.apiService.uploadPlanXlsx(formData).subscribe({
+          next: (res: any) => {
+            this.isLoading = false
+            this.modalService.dismissAll()
+            handleResponse(res)
+          },
+          error: (err) => {
+            this.isLoading = false
+            this.common.showErrorAlert(Const.ERR_INSERT_MSG('Plan'), err)
+          }
+        })
+      }
     }
   }
 
@@ -1040,18 +1130,14 @@ export class BudgetInputComponent {
 
   sort(colData: Column) {
     if (colData.name) {
-      console.log(colData);
-      
       const column = colData.name
+
       if (this.sortedColumn === colData.col) {
         this.isAscending = !this.isAscending;
       } else {
         this.sortedColumn = colData.col;
         this.isAscending = true;
       }
-
-      console.log("sort column ", this.sortedColumn);
-      console.log("is ascending ", this.isAscending);
   
       this.suppliesData.sort((a, b) => {
         let aValue = a[column];

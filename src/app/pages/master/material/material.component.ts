@@ -1,6 +1,7 @@
-import { Component, HostListener } from '@angular/core';
-import { delay } from 'rxjs';
+import { Component } from '@angular/core';
+import { CommonService } from 'src/app/core/services/common.service';
 import { restApiService } from 'src/app/core/services/rest-api.service';
+import { Const } from 'src/app/core/static/const';
 
 @Component({
   selector: 'app-material',
@@ -8,56 +9,54 @@ import { restApiService } from 'src/app/core/services/rest-api.service';
   styleUrls: ['./material.component.scss']
 })
 export class MaterialComponent {
-  data: any[] = [];
-  page = 1;
-  pageSize = 25;
+  tableColumns = ['#', 'Material Code', 'Material Description', 'UOM', 'Latest Average Price', 'Action']
 
-  isEndScrolling = false;
   isLoading = false;
+  materialData: any[] = []
 
-  constructor(private apiService: restApiService) { }
+  pageSize = 10;
+  currentPage = 1;
+  totalPages!: number;
+  totalItems = 0;
 
-  async ngOnInit() {
-    console.log("on init page: " + this.page);
-    await this.loadData().then((resolve) => this.page++)
+  breadCrumbItems!: Array<{}>;
+
+  constructor(private apiService: restApiService, public common: CommonService) {
+    this.breadCrumbItems = [
+      { label: 'Master', active: false },
+      { label: 'Material Supplies', active: true }
+    ];
   }
 
-  @HostListener('window:scroll', ['$event'])
-  onScroll(event: Event) {
-    if (!this.isEndScrolling && (window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
-      this.loadData().then((resolve) => this.page++)
-    }
+  ngOnInit() {
+    this.isLoading = true;
+    this.getMaterialWithPagination(this.currentPage, this.pageSize).finally(() => this.isLoading = false)
   }
 
-  async loadData() {
+  async getMaterialWithPagination(page: number, pageSize: number) {
     return new Promise((resolve, reject) => {
-      console.log("page: " + this.page);
-    
-      console.log("Scrolling...");
-      console.log("Length: ", this.data.length);
-      
-      this.isLoading = true;
-      this.apiService.getMaterialByPagination(this.page, this.pageSize).pipe(delay(1000)).subscribe({
+      this.apiService.getMaterialByPagination(page, pageSize).subscribe({
         next: (res: any) => {
-          console.log(res);
-          
-          this.isLoading = false;
-          if (res.data.length > 0) {
-            this.data = [...this.data, ...res.data];
-          } else {
-            this.isEndScrolling = true;
-            console.log("End of page");
-          }
-
+          this.materialData = res.data
+          this.totalItems = res.total_material
           resolve(true)
         },
         error: (err) => {
-          this.isLoading = false;
-          this.isEndScrolling = true;
+          this.common.showServerErrorAlert(Const.ERR_GET_MSG("Material"), err)
           reject(err)
         }
-      });
+      })
     })
-    
   }
+
+  calculateStartingIndex(index: number): number {
+    return (this.currentPage - 1) * this.pageSize + index + 1;
+  }
+
+  getLatestAveragePrice(detailPrice: any[]): number {
+    const years = detailPrice.map((item) => item.year)
+    const latestYear = Math.max(...years)
+    return detailPrice.filter((item) => item.year === latestYear)[0].average_price || 0
+  }
+
 }

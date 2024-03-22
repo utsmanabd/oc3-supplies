@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, NgZone, ViewChild } from '@angular/core';
 import { ChartType } from './dashboard.model';
 import { CommonService } from 'src/app/core/services/common.service';
 import { restApiService } from 'src/app/core/services/rest-api.service';
@@ -92,7 +92,7 @@ export class DashboardComponent {
   @ViewChild("line") line!: ElementRef
   @ViewChild("section") section!: ElementRef
 
-  constructor(public common: CommonService, private apiService: restApiService, private router: Router) {
+  constructor(public common: CommonService, private apiService: restApiService, private router: Router, private ngZone: NgZone) {
     this.year = new Date().getFullYear()
     this.yearSubject.pipe(debounceTime(350)).subscribe(year => {
       this.ngOnInit()
@@ -1042,13 +1042,15 @@ export class DashboardComponent {
           click: (event: any, context: any, config: any) => {
             const index = config.dataPointIndex
             if (index !== -1) {
-              this.router.navigate(['supplies'], {queryParams: {
-                lineId: this.selectedLine.id,
-                year: this.year,
-                month: this.sectionActualMonthColumnData.rawData![index].month,
-                costCtrId: this.sectionActualMonthColumnData.rawData![index].cost_ctr_id,
-                tab: config.seriesIndex == 0 ? 'Plan' : 'Actual'
-              }})
+              this.ngZone.run(() => {
+                this.router.navigate(['supplies'], {queryParams: {
+                  lineId: this.selectedLine.id,
+                  year: this.year,
+                  month: this.sectionActualMonthColumnData.rawData![index].month,
+                  costCtrId: this.sectionActualMonthColumnData.rawData![index].cost_ctr_id,
+                  tab: config.seriesIndex == 0 ? 'Plan' : 'Actual'
+                }})
+              })
             }
           }
         }

@@ -1,7 +1,64 @@
-<p>material works!</p>
-
-<div class="data-card" *ngFor="let item of data">
-   id: {{ item.id }}
+<ngx-loading [show]="isLoading"></ngx-loading>
+<app-breadcrumbs title="Master Material" [breadcrumbItems]="breadCrumbItems"></app-breadcrumbs>
+<div class="card">
+   <div class="card-header">
+      <div class="row g-4">
+         <div class="col-sm-auto">
+           <div class="d-flex gap-1">
+             <button type="button" class="btn btn-primary add-btn" id="import-btn">
+               <i class="ri-file-upload-line align-bottom me-1"></i> Import
+             </button>
+             <button type="button" class="btn btn-success add-btn" id="create-btn">
+               <i class="ri-add-line align-bottom me-1"></i> Add
+             </button>
+           </div>
+         </div>
+         <div class="col-sm">
+           <div class="d-flex justify-content-sm-end">
+             <div class="search-box ms-2">
+               <input type="text" class="form-control search" placeholder="Search..." />
+               <i class="ri-search-line search-icon"></i>
+             </div>
+           </div>
+         </div>
+       </div>
+   </div>
+  <div class="card-body table-responsive">
+    <table class="table table-hover table-striped" *ngIf="materialData.length > 0">
+      <thead>
+        <tr>
+          <th *ngFor="let col of tableColumns" scope="col">{{ col }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let data of materialData; let i = index">
+          <th scope="row">{{ calculateStartingIndex(i) }}</th>
+          <td>{{ data.material_code }}</td>
+          <td>{{ data.material_desc }}</td>
+          <td>{{ data.uom }}</td>
+          <td>{{ common.getRupiahFormat(getLatestAveragePrice(data.detail_price)) }}</td>
+          <td>
+            <button class="btn btn-sm btn-soft-success me-2" type="button">
+              Detail
+            </button>
+            <button class="btn btn-sm btn-soft-primary" type="button">
+              Edit
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">
+    <div class="d-flex justify-content-center">
+      <ngb-pagination
+        [collectionSize]="totalItems"
+        [maxSize]="3"
+        [(page)]="currentPage"
+        [pageSize]="pageSize"
+        (pageChange)="getMaterialWithPagination(currentPage, pageSize)"
+      >
+      </ngb-pagination>
+    </div>
+  </div>
 </div>
-
-<div *ngIf="isLoading">Loading...</div>

@@ -1,9 +1,14 @@
-export const GlobalComponent = {
-    // Auth Api
-    AUTH_API:"http://localhost:3333/api/auth/",
+import { environment } from "src/environments/environment";
 
+export const GlobalComponent = {
     // General URL
-    API_URL: "http://localhost:3333/api/master/",
+    API_URL: `${environment.baseUrl}api/`,
+    
+    // Auth Api
+    AUTH_API:`${environment.baseUrl}api/auth/`,
+
+    // Master URL
+    MASTER_API_URL: `${environment.baseUrl}api/master/`,
 
     // AIO Api
     AIO_API: "https://myapps.aio.co.id/otsuka-api/api/",
