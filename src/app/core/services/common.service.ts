@@ -162,6 +162,22 @@ export class CommonService {
     return result;
   }
 
+  isFirstOrLastIndex(array: any[], element: any) {
+    if (array.length === 0) {
+        return false;
+    }
+
+    if (JSON.stringify(array[0]) === JSON.stringify(element)) {
+        return true;
+    }
+    
+    if (JSON.stringify(array[array.length - 1]) === JSON.stringify(element)) {
+        return true;
+    }
+    
+    return false;
+}
+
   // HTML Doc Manipulation
   goToTop() {
     document.body.scrollTop = 0;

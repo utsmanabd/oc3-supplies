@@ -1,0 +1,60 @@
+<div class="row" *ngIf="materialData">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">Detail</h4>
+            </div>
+            <div class="card-body table-responsive">
+                <table class="table mb-0">
+                    <tbody>
+                        <tr>
+                            <th scope="row" style="width: 200px;">Material Code</th>
+                            <td>{{ materialData.material_code }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Material Description</th>
+                            <td>{{ materialData.material_desc }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">UOM</th>
+                            <td>{{ materialData.uom }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Latest Average Price</th>
+                            <td>{{ common.getRupiahFormat(getLatestAveragePrice(materialData.detail_price)) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">Average Price History</h4>
+            </div>
+            <div class="card-body">
+                <ngx-simplebar class="p-3" style="max-height: 364px;">
+                    <div class="acitivity-timeline acitivity-main">
+                        <div *ngFor="let price of materialData.detail_price; let i = index" class="acitivity-item d-flex {{ common.isFirstOrLastIndex(materialData.detail_price, price) ? '' : 'py-2' }}"> <!--py3-->
+                            <div class="flex-shrink-0 avatar-xs acitivity-avatar">
+                                <div class="avatar-title bg-soft-secondary text-secondary rounded-circle">
+                                    <i class="ri-money-dollar-circle-line"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1">{{ price.year }}</h6>
+                                <p class="mb-1">{{ common.getRupiahFormat(price.average_price || 0) }} </p>
+                                <div class="mb-2" 
+                                    [ngClass]="setAveragePricePercentage(i === materialData.detail_price.length - 1 ? 0 : materialData.detail_price[i + 1].average_price || 0 , price.average_price) > 0 ? 'text-danger' : 'text-success'" >
+                                    <i class="ri ri-arrow-right-{{ setAveragePricePercentage(i === materialData.detail_price.length - 1 ? 0 : materialData.detail_price[i + 1].average_price || 0, materialData.detail_price[i].average_price) > 0 ? 'up' : 'down' }}-line fs-17 align-mimaterialData.detail_pricele"></i>
+                                    {{ setAveragePricePercentage(i === materialData.detail_price.length - 1 ? 0 : materialData.detail_price[i + 1].average_price || 0, materialData.detail_price[i].average_price).toFixed(2) }}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ngx-simplebar>
+            </div>
+        </div>
+    </div>
+</div>

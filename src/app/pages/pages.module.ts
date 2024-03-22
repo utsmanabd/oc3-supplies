@@ -9,6 +9,7 @@ import { LeafletModule } from '@asymmetrik/ngx-leaflet';
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { SimplebarAngularModule } from 'simplebar-angular';
 import { NgxLoadingModule } from 'ngx-loading';
+import {AutocompleteLibModule} from 'angular-ng-autocomplete';
 
 import { LightboxModule } from 'ngx-lightbox';
 
@@ -29,6 +30,7 @@ import { MaterialComponent } from './master/material/material.component';
 import { CostCenterComponent } from './master/cost-center/cost-center.component';
 import { CalculationBudgetComponent } from './master/calculation-budget/calculation-budget.component';
 import { UsersComponent } from './master/users/users.component';
+import { DetailMaterialComponent } from './master/material/detail-material/detail-material.component';
 
 @NgModule({
   declarations: [
@@ -41,7 +43,8 @@ import { UsersComponent } from './master/users/users.component';
     MaterialComponent,
     CostCenterComponent,
     CalculationBudgetComponent,
-    UsersComponent
+    UsersComponent,
+    DetailMaterialComponent
   ],
   imports: [
     CommonModule,
@@ -61,7 +64,8 @@ import { UsersComponent } from './master/users/users.component';
     NgbTypeahead,
     JsonPipe,
     NgbAccordionModule,
-    NgbNavModule
+    NgbNavModule,
+    AutocompleteLibModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [DecimalPipe]

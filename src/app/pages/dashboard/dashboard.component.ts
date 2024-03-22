@@ -965,6 +965,21 @@ export class DashboardComponent {
         toolbar: {
           show: false,
         },
+        events: {
+          click: (event: any, context: any, config: any) => {
+            if (config.dataPointIndex !== -1) {
+              let materialCode = 0
+              if (this.isTabOpen.actual) {
+                materialCode = this.supplyActualData.rawData![config.dataPointIndex].material_code
+              } else {
+                materialCode = this.supplyBudgetData.rawData![config.dataPointIndex].material_code
+              }
+              this.ngZone.run(() => {
+                this.router.navigate([`./master/material/${materialCode}`])
+              })
+            }
+          }
+        }
       },
       colors: colors,
       dataLabels: {

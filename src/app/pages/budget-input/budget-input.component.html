@@ -107,7 +107,9 @@
               <span class="fs-7 text-muted">{{ data.cost_center }}</span>
             </td>
             <td>{{ data.material_code }}</td>
-            <td>{{ data.material_desc }}</td>
+            <td>
+              <a class="text-reset" routerLink="../master/material/{{ data.material_code }}">{{ data.material_desc }}</a>
+            </td>
             <td *ngIf="isTabOpen.budgetPlan">
               <div class="fs-6">
                 <a class="text-reset">{{ data.calculation_by }}</a>

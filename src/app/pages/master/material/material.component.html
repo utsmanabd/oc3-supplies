@@ -8,7 +8,7 @@
              <button type="button" class="btn btn-primary add-btn" id="import-btn">
                <i class="ri-file-upload-line align-bottom me-1"></i> Import
              </button>
-             <button type="button" class="btn btn-success add-btn" id="create-btn">
+             <button type="button" class="btn btn-success add-btn" id="create-btn" (click)="openModal(updateModal)">
                <i class="ri-add-line align-bottom me-1"></i> Add
              </button>
            </div>
@@ -16,7 +16,7 @@
          <div class="col-sm">
            <div class="d-flex justify-content-sm-end">
              <div class="search-box ms-2">
-               <input type="text" class="form-control search" placeholder="Search..." />
+               <input type="text" class="form-control search" placeholder="Search..." [(ngModel)]="searchTerm" (input)="onSearch()" />
                <i class="ri-search-line search-icon"></i>
              </div>
            </div>
@@ -24,13 +24,13 @@
        </div>
    </div>
   <div class="card-body table-responsive">
-    <table class="table table-hover table-striped" *ngIf="materialData.length > 0">
+    <table class="table table-hover table-striped">
       <thead>
         <tr>
           <th *ngFor="let col of tableColumns" scope="col">{{ col }}</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody *ngIf="materialData.length > 0">
         <tr *ngFor="let data of materialData; let i = index">
           <th scope="row">{{ calculateStartingIndex(i) }}</th>
           <td>{{ data.material_code }}</td>
@@ -38,9 +38,9 @@
           <td>{{ data.uom }}</td>
           <td>{{ common.getRupiahFormat(getLatestAveragePrice(data.detail_price)) }}</td>
           <td>
-            <button class="btn btn-sm btn-soft-success me-2" type="button">
+            <a class="btn btn-sm btn-soft-success me-2" routerLink="./{{ data.material_code }}">
               Detail
-            </button>
+            </a>
             <button class="btn btn-sm btn-soft-primary" type="button">
               Edit
             </button>
@@ -56,9 +56,61 @@
         [maxSize]="3"
         [(page)]="currentPage"
         [pageSize]="pageSize"
-        (pageChange)="getMaterialWithPagination(currentPage, pageSize)"
+        (pageChange)="searchMaterialWithPagination(searchTerm, currentPage, pageSize)"
       >
       </ngb-pagination>
     </div>
   </div>
 </div>
+<ng-template #updateModal let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title"> Supply Budgeting</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="p-2">
+          <div class="row g-3">
+            <div class="col-md-4 col-sm-6">
+              <label for="matCode">Material Code</label>
+              <input placeholder="Input Material Code" type="number" class="form-control" id="matCode" name="matCode">
+            </div>
+            <div class="col-md-4 col-sm-6">
+              <label for="matDesc">Material Description</label>
+              <input placeholder="Input Material Description" type="text" class="form-control" id="matDesc" name="matDesc">
+            </div>
+            <div class="col-md-4 col-sm-6">
+              <label>UOM</label>
+              <ng-autocomplete [data]="uomData" [searchKeyword]="'uom'" placeholder="UOM" [itemTemplate]="itemTemplate">
+              </ng-autocomplete>
+              <ng-template #itemTemplate let-item>
+                <a [innerHTML]="item"></a>
+              </ng-template>
+            </div>
+            <div class="col-md-4 col-sm-6">
+              <label>Year</label>
+              <div class="input-group">
+                <button class="btn btn-sm btn-primary" (click)="onButtonChangeYear('prev')" type="button">
+                  <i class="ri ri-arrow-left-line"></i>
+                </button>
+                <input type="number" (change)="onYearChange($event)" class="form-control" [(ngModel)]="year" />
+                <button class="btn btn-sm btn-primary" (click)="onButtonChangeYear('next')" type="button">
+                  <i class="ri ri-arrow-right-line"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-4 col-sm-6">
+              <label for="avgPrice">Average Price (Rp)</label>
+              <input [disabled]="!year" placeholder="Input Average Price" type="number" class="form-control" id="avgPrice" name="avgPrice">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <!-- <small *ngIf="isFormInvalid" class="form-text text-danger">Please fill all the field above!</small> -->
+    <button type="button" class="btn btn-success">Save</button>
+  </div>
+</ng-template>

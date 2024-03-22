@@ -1,22 +1,3 @@
-import {
-    ApexAxisChartSeries,
-    ApexChart,
-    ChartComponent,
-    ApexDataLabels,
-    ApexPlotOptions,
-    ApexYAxis,
-    ApexLegend,
-    ApexStroke,
-    ApexXAxis,
-    ApexFill,
-    ApexTooltip,
-    ApexTitleSubtitle,
-    ApexResponsive,
-    ApexAnnotations,
-    ApexGrid,
-    ApexStates
-} from "ng-apexcharts";
-
 export interface ChartType {
   series?: any;
   chart?: any;

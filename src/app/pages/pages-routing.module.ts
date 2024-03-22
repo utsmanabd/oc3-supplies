@@ -10,6 +10,7 @@ import { UsersComponent } from './master/users/users.component';
 import { CostCenterComponent } from './master/cost-center/cost-center.component';
 import { CalculationBudgetComponent } from './master/calculation-budget/calculation-budget.component';
 import { MaterialComponent } from './master/material/material.component';
+import { DetailMaterialComponent } from './master/material/detail-material/detail-material.component';
 
 const routes: Routes = [
     {
@@ -27,6 +28,10 @@ const routes: Routes = [
     {
       path: "master/material",
       component: MaterialComponent
+    },
+    {
+      path: "master/material/:code",
+      component: DetailMaterialComponent
     },
     {
       path: "master/cost-center",

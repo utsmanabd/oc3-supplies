@@ -191,6 +191,19 @@ export class restApiService {
     return this.requestHttpGet(`material/pagination?page=${page}&pageSize=${pageSize}`)
   }
 
+  getMaterialByCode(materialCode: number) {
+    return this.requestHttpGet(`material/code/${materialCode}`)
+  }
+
+  getMaterialUOM() {
+    const cacheKey = "materialUOM"
+    return this.requestCachedHttpGet(`material/uom`, cacheKey)
+  }
+
+  searchMaterialByPagination(term: string, page: number, pageSize: number) {
+    return this.http.post(GlobalComponent.MASTER_API_URL + `material/search/pagination?page=${page}&pageSize=${pageSize}`, { search: term }, httpOptions)
+  }
+
   searchMaterial(term: string) {
     if (term === '') {
       return of([])
