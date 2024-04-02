@@ -1,7 +1,7 @@
 import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule, DecimalPipe, JsonPipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { NgbToastModule, NgbProgressbarModule, NgbPaginationModule, NgbTypeahead, NgbAccordionModule, NgbNavModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbToastModule, NgbProgressbarModule, NgbPaginationModule, NgbTypeahead, NgbAccordionModule, NgbNavModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 
 import { FlatpickrModule } from 'angularx-flatpickr';
 import { NgApexchartsModule } from 'ng-apexcharts';
@@ -65,7 +65,8 @@ import { DetailMaterialComponent } from './master/material/detail-material/detai
     JsonPipe,
     NgbAccordionModule,
     NgbNavModule,
-    AutocompleteLibModule
+    AutocompleteLibModule,
+    NgbTooltipModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [DecimalPipe]

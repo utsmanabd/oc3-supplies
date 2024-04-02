@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
-import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { Observable, debounceTime, delay, map, of, switchMap, tap, throwError } from "rxjs";
+import { HttpClient, HttpErrorResponse, HttpHeaders } from "@angular/common/http";
+import { Observable, catchError, debounceTime, delay, map, of, switchMap, tap, throwError } from "rxjs";
 import { GlobalComponent } from "../../global-component";
 
 const httpOptions = {
@@ -14,6 +14,21 @@ export class restApiService {
   constructor(private http: HttpClient) {}
 
   cache: any[] = []
+
+  private handleError(error: HttpErrorResponse) {
+    return throwError(() => error.statusText);
+  }
+
+  private defaultHttpError(error: HttpErrorResponse) {
+    return throwError(() => error);
+  }
+
+  private beginErrorHandling(isIgnored: boolean) {
+    if (!isIgnored) {
+      return catchError(this.handleError)
+    }
+    return catchError(this.defaultHttpError);
+  }
 
   // Cache Management
   resetCachedData(cachedData?:string) {
@@ -44,31 +59,34 @@ export class restApiService {
   }
 
   // Fixed HTTP Request Methods
-  requestCachedHttpGet(urlParams: string, cacheKey: string): Observable<any> {
+  requestCachedHttpGet(urlParams: string, cacheKey: string, isIgnoredErrorHandling = false): Observable<any> {
     if (this.isCachedDataExists(cacheKey)) {
       return of(this.getCachedData(cacheKey))
     } else {
       return this.http.get(GlobalComponent.MASTER_API_URL + urlParams, httpOptions).pipe(
-        tap((data) => this.setCachedData(cacheKey, data))
-      )
+        this.beginErrorHandling(isIgnoredErrorHandling),
+        tap((data) => this.setCachedData(cacheKey, data)
+      ))
     }
   }
 
-  requestHttpGet(urlParams: string): Observable<any> {
-    return this.http.get(GlobalComponent.MASTER_API_URL + urlParams, httpOptions)
-  }
-
-  requestHttpPost(urlParams: string, data: any): Observable<any> {
-    return this.http.post(GlobalComponent.MASTER_API_URL + urlParams, { form_data: data }, httpOptions).pipe(
-      tap(() => {
-        this.resetCachedData()
-      })
+  requestHttpGet(urlParams: string, isIgnoredErrorHandling = false): Observable<any> {
+    return this.http.get(GlobalComponent.MASTER_API_URL + urlParams, httpOptions).pipe(
+      this.beginErrorHandling(isIgnoredErrorHandling)
     )
   }
 
-  requestHttpPut(urlParams: string, id: any, data: any): Observable<any> {
+  requestHttpPost(urlParams: string, data: any, isIgnoredErrorHandling = false): Observable<any> {
+    return this.http.post(GlobalComponent.MASTER_API_URL + urlParams, { form_data: data }, httpOptions).pipe(
+      tap(() => this.resetCachedData()),
+      this.beginErrorHandling(isIgnoredErrorHandling)
+    )
+  }
+
+  requestHttpPut(urlParams: string, id: any, data: any, isIgnoredErrorHandling = false): Observable<any> {
     return this.http.put(GlobalComponent.MASTER_API_URL + urlParams + `/${id}`, { form_data: data }, httpOptions).pipe(
-      tap(() => this.resetCachedData())
+      tap(() => this.resetCachedData()),
+      this.beginErrorHandling(isIgnoredErrorHandling)
     )
   }
 
@@ -90,7 +108,8 @@ export class restApiService {
                 )
                 .slice(0, 10)
             : []
-        )
+        ),
+        catchError(this.handleError)
       );
   }
 
@@ -201,7 +220,9 @@ export class restApiService {
   }
 
   searchMaterialByPagination(term: string, page: number, pageSize: number) {
-    return this.http.post(GlobalComponent.MASTER_API_URL + `material/search/pagination?page=${page}&pageSize=${pageSize}`, { search: term }, httpOptions)
+    return this.http.post(GlobalComponent.MASTER_API_URL + `material/search/pagination?page=${page}&pageSize=${pageSize}`, { search: term }, httpOptions).pipe(
+      catchError(this.handleError)
+    )
   }
 
   searchMaterial(term: string) {
@@ -216,16 +237,17 @@ export class restApiService {
                 .test(`${data.material_code} - ${data.material_desc}`))
               .slice(0, 10)
           : []
-        )
+        ),
+        catchError(this.handleError)
       )
   }
 
   insertMaterial(data: any) {
-    return this.requestHttpPost(`material`, data)
+    return this.requestHttpPost(`material`, data, true)
   }
 
   updateMaterial(id: any, data: any) {
-    return this.requestHttpPut(`material`, id, data)
+    return this.requestHttpPut(`material`, id, data, true)
   }
 
   // Line Cost Center
@@ -241,7 +263,8 @@ export class restApiService {
                 .test(`${data.section} (${data.cost_ctr})`))
               .slice(0, 10)
           : []
-        )
+        ),
+        catchError(this.handleError)
       )
   }
 
@@ -326,6 +349,35 @@ export class restApiService {
     return this.http.post(GlobalComponent.MASTER_API_URL + 'xlsx/plan', file).pipe(
       tap(() => this.resetCachedData())
     )
+  }
+
+  uploadMaterialXlsx(file: FormData, year: number) {
+    return this.http.post(GlobalComponent.MASTER_API_URL + `xlsx/material?year=${year}`, file).pipe(
+      tap(() => this.resetCachedData())
+    )
+  }
+
+  uploadAvgPriceXlsx(file: FormData, year: number) {
+    return this.http.post(GlobalComponent.MASTER_API_URL + `xlsx/avgprice?year=${year}`, file).pipe(
+      tap(() => this.resetCachedData())
+    )
+  }
+
+  // Average Price API
+  getAveragePriceByCodeYear(materialCode: number, year: number) {
+    return this.requestHttpGet(`avg-price/detail?code=${materialCode}&year=${year}`)
+  }
+
+  insertAveragePrice(data: any) {
+    return this.requestHttpPost(`avg-price`, data, true)
+  }
+
+  updateAveragePrice(id: any, data: any) {
+    return this.requestHttpPut(`avg-price`, id, data)
+  }
+
+  updateMultipleAvgPrice(data: any) {
+    return this.requestHttpPost(`avg-price/multiple`, data)
   }
 
 }

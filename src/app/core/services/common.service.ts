@@ -137,6 +137,20 @@ export class CommonService {
     return totalWeeks;
   }
 
+  getLocaleDate(date: string | number | Date): string {
+    const dateObj = new Date(date);
+    const month = dateObj.toLocaleString('default', { month: 'short' });
+    const day = dateObj.getDate();
+    const year = dateObj.getFullYear();
+    return `${day} ${month}, ${year}`;
+  }
+
+  getTime(date: string): string {
+    const dateObj = new Date(date);
+    const time = dateObj.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    return time;
+  }
+
   // Array manipulation
   getIndexById(arr: any[], id: any, idKey: string): number {
     for (let i = 0; i < arr.length; i++) {

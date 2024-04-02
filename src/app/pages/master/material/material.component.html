@@ -5,7 +5,7 @@
       <div class="row g-4">
          <div class="col-sm-auto">
            <div class="d-flex gap-1">
-             <button type="button" class="btn btn-primary add-btn" id="import-btn">
+             <button type="button" class="btn btn-primary add-btn" id="import-btn" (click)="openModal(importModal)">
                <i class="ri-file-upload-line align-bottom me-1"></i> Import
              </button>
              <button type="button" class="btn btn-success add-btn" id="create-btn" (click)="openModal(updateModal)">
@@ -16,7 +16,7 @@
          <div class="col-sm">
            <div class="d-flex justify-content-sm-end">
              <div class="search-box ms-2">
-               <input type="text" class="form-control search" placeholder="Search..." [(ngModel)]="searchTerm" (input)="onSearch()" />
+               <input type="text" class="form-control search" placeholder="Search..." [(ngModel)]="searchTerm" (input)="searchSubject.next(searchTerm)" />
                <i class="ri-search-line search-icon"></i>
              </div>
            </div>
@@ -38,12 +38,10 @@
           <td>{{ data.uom }}</td>
           <td>{{ common.getRupiahFormat(getLatestAveragePrice(data.detail_price)) }}</td>
           <td>
-            <a class="btn btn-sm btn-soft-success me-2" routerLink="./{{ data.material_code }}">
-              Detail
+            <a ngbTooltip="Detail" placement="start" class="mt-1 mb-1 btn btn-sm btn-soft-success me-2" routerLink="./{{ data.material_code }}">
+              <i class="ri ri-eye-line"></i>
             </a>
-            <button class="btn btn-sm btn-soft-primary" type="button">
-              Edit
-            </button>
+            <button (click)="onDeleteMaterial(data)" ngbTooltip="Delete" placement="end" type="button" class="mt-1 mb-1 btn btn-soft-danger btn-sm"><i class="ri ri-delete-bin-line"></i></button>
           </td>
         </tr>
       </tbody>
@@ -64,7 +62,7 @@
 </div>
 <ng-template #updateModal let-modal>
   <div class="modal-header">
-    <h4 class="modal-title"> Supply Budgeting</h4>
+    <h4 class="modal-title">Add New Material</h4>
     <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
   </div>
   <div class="modal-body">
@@ -72,37 +70,37 @@
       <div class="col-lg-12">
         <div class="p-2">
           <div class="row g-3">
-            <div class="col-md-4 col-sm-6">
-              <label for="matCode">Material Code</label>
-              <input placeholder="Input Material Code" type="number" class="form-control" id="matCode" name="matCode">
+            <div class="col-lg-4 col-sm-6">
+              <label class="form-label" for="matCode">Material Code</label>
+              <input [(ngModel)]="material.material_code" placeholder="Input Material Code" type="number" class="form-control" id="matCode" name="matCode">
             </div>
-            <div class="col-md-4 col-sm-6">
-              <label for="matDesc">Material Description</label>
-              <input placeholder="Input Material Description" type="text" class="form-control" id="matDesc" name="matDesc">
+            <div class="col-lg-6 col-sm-6">
+              <label class="form-label" for="matDesc">Material Description</label>
+              <input [(ngModel)]="material.material_desc" placeholder="Input Material Description" type="text" class="form-control" id="matDesc" name="matDesc">
             </div>
-            <div class="col-md-4 col-sm-6">
-              <label>UOM</label>
-              <ng-autocomplete [data]="uomData" [searchKeyword]="'uom'" placeholder="UOM" [itemTemplate]="itemTemplate">
+            <div class="col-lg-2 col-sm-6">
+              <label class="form-label">UOM</label>
+              <ng-autocomplete [(ngModel)]="material.uom" [data]="uomData" [searchKeyword]="'uom'" placeholder="Input UOM" [itemTemplate]="itemTemplate">
               </ng-autocomplete>
               <ng-template #itemTemplate let-item>
                 <a [innerHTML]="item"></a>
               </ng-template>
             </div>
-            <div class="col-md-4 col-sm-6">
-              <label>Year</label>
+            <div class="col-lg-9 col-sm-6">
+              <label class="form-label" for="avgPrice">Average Price (Rp)</label>
+              <input [(ngModel)]="material.average_price" [disabled]="year <= 0" placeholder="Input Average Price" type="number" class="form-control" id="avgPrice" name="avgPrice">
+            </div>
+            <div class="col-lg-3 col-sm-6">
+              <label class="form-label">Year (avg. price in)</label>
               <div class="input-group">
-                <button class="btn btn-sm btn-primary" (click)="onButtonChangeYear('prev')" type="button">
+                <button class="btn btn-sm btn-success" (click)="onButtonChangeYear('prev')" type="button">
                   <i class="ri ri-arrow-left-line"></i>
                 </button>
                 <input type="number" (change)="onYearChange($event)" class="form-control" [(ngModel)]="year" />
-                <button class="btn btn-sm btn-primary" (click)="onButtonChangeYear('next')" type="button">
+                <button class="btn btn-sm btn-success" (click)="onButtonChangeYear('next')" type="button">
                   <i class="ri ri-arrow-right-line"></i>
                 </button>
               </div>
-            </div>
-            <div class="col-md-4 col-sm-6">
-              <label for="avgPrice">Average Price (Rp)</label>
-              <input [disabled]="!year" placeholder="Input Average Price" type="number" class="form-control" id="avgPrice" name="avgPrice">
             </div>
           </div>
         </div>
@@ -111,6 +109,121 @@
   </div>
   <div class="modal-footer">
     <!-- <small *ngIf="isFormInvalid" class="form-text text-danger">Please fill all the field above!</small> -->
-    <button type="button" class="btn btn-success">Save</button>
+    <button type="button" class="btn btn-success" (click)="onSaveChanges()">Save</button>
+  </div>
+</ng-template>
+
+<ng-template #importModal let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">Import Material</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+    <ul (navChange)="onImportModalNavChange()" ngbNav #Bordered="ngbNav" [(activeId)]="activeTabImport" class="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3">
+      <li [ngbNavItem]="'Material'">
+          <a ngbNavLink>
+              New Material
+          </a>
+          <ng-template ngbNavContent>
+            <div class="row">
+              <div class="col-lg-9 col-sm-6 mb-3">
+                <label for="file" class="form-label">Select file</label>
+                <input class="form-control" id="file" type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (change)="onXLSXFileChange($event)">
+              </div>
+              <div class="col-lg-3 col-sm-6 mb-3">
+                <label class="form-label">Year (avg. price in)</label>
+                <div class="input-group">
+                  <button class="btn btn-sm btn-success" (click)="onButtonChangeYear('prev')" type="button">
+                    <i class="ri ri-arrow-left-line"></i>
+                  </button>
+                  <input type="number" (change)="onYearChange($event)" class="form-control" [(ngModel)]="year" />
+                  <button class="btn btn-sm btn-success" (click)="onButtonChangeYear('next')" type="button">
+                    <i class="ri ri-arrow-right-line"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <small><a href="{{ materialXlsxLink }}">Download XLSX template</a></small>
+          </ng-template>
+      </li>
+      <li [ngbNavItem]="'AvgPrice'">
+          <a ngbNavLink>
+              Update Average Price
+          </a>
+          <ng-template ngbNavContent>
+            <div class="row">
+              <div class="col-lg-9 col-sm-6 mb-3">
+                <label for="file" class="form-label">Select file</label>
+                <input class="form-control" id="file" type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (change)="onXLSXFileChange($event)">
+              </div>
+              <div class="col-lg-3 col-sm-6 mb-3">
+                <label class="form-label">Year (avg. price in)</label>
+                <div class="input-group">
+                  <button class="btn btn-sm btn-success" (click)="onButtonChangeYear('prev')" type="button">
+                    <i class="ri ri-arrow-left-line"></i>
+                  </button>
+                  <input type="number" (change)="onYearChange($event)" class="form-control" [(ngModel)]="year" />
+                  <button class="btn btn-sm btn-success" (click)="onButtonChangeYear('next')" type="button">
+                    <i class="ri ri-arrow-right-line"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <small><a href="{{ avgPriceXlsxLink }}">Download XLSX template</a></small>
+          </ng-template>
+      </li>
+    </ul>
+    <div class="tab-content text-muted">
+      <div [ngbNavOutlet]="Bordered"></div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-light" (click)="modal.dismiss()">Cancel</button>
+    <button *ngIf="!isLoading" type="button" (click)="onImportXLSX(activeTabImport)" class="btn btn-success"[disabled]="!uploadedFiles">Import</button>
+    <button *ngIf="isLoading" type="button" class="btn btn-success btn-load" disabled>
+      <span class="d-flex align-items-center">
+          <span class="spinner-border flex-shrink-0" role="status">
+              <span class="visually-hidden">Loading...</span>
+          </span>
+          <span class="flex-grow-1 ms-2">
+              Loading...
+          </span>
+      </span>
+    </button>
+</div>
+</ng-template>
+<ng-template #importDetailModal let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title">Import Details</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  <div class="modal-body">
+    <div class="mb-3" *ngIf="err.duplicatesMaterial?.length != 0">
+      <label>Duplicates Material Found</label>
+      <ol class="list-group list-group-numbered">
+        <li class="list-group-item" *ngFor="let item of err.duplicatesMaterial">
+          {{ item.material_code }} {{ item.material_desc ? '- ' + item.material_desc : "" }}
+        </li>
+      </ol>
+    </div>
+    <div class="mb-3" *ngIf="err.existMaterial?.length != 0">
+      <label>Existing Material</label>
+      <ul class="list-group list-group-numbered">
+        <li class="list-group-item" *ngFor="let item of err.existMaterial">
+          {{ item.material_desc }}
+          <span class="ms-1 text-secondary"><small>/ {{ item.material_code }}</small></span>
+          <span class="ms-1 text-muted"><small>({{ item.uom }})</small></span>
+        </li>
+      </ul>
+    </div>
+    <div class="mb-3" *ngIf="err.notFoundMaterial?.length != 0">
+      <label>Not Found Material</label>
+      <ol class="list-group list-group-numbered">
+        <li ngFor class="list-group-item" *ngFor="let item of err.notFoundMaterial">{{ item }}</li>
+      </ol>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-light" (click)="modal.dismiss()">Close</button>
   </div>
 </ng-template>

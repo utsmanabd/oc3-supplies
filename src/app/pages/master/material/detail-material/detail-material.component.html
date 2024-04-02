@@ -1,60 +1,124 @@
+<ngx-loading [show]="isLoading"></ngx-loading>
+<app-breadcrumbs title="Detail Material" [breadcrumbItems]="breadCrumbItems"></app-breadcrumbs>
 <div class="row" *ngIf="materialData">
-    <div class="col-md-8">
+    <div class="col-md-7">
         <div class="card">
-            <div class="card-header">
-                <h4 class="card-title mb-0">Detail</h4>
+            <div class="card-header align-items-center d-flex">
+                <h4 class="card-title mb-0 flex-grow-1">Detail</h4>
             </div>
             <div class="card-body table-responsive">
                 <table class="table mb-0">
                     <tbody>
                         <tr>
                             <th scope="row" style="width: 200px;">Material Code</th>
-                            <td>{{ materialData.material_code }}</td>
+                            <td>
+                                <div *ngIf="!isMaterialEditMode">{{ materialData.material_code }}</div>
+                                <input *ngIf="isMaterialEditMode" type="number" class="form-control" [(ngModel)]="materialData.material_code">
+                            </td>
                         </tr>
                         <tr>
                             <th scope="row">Material Description</th>
-                            <td>{{ materialData.material_desc }}</td>
+                            <td>
+                                <div *ngIf="!isMaterialEditMode">{{ materialData.material_desc }}</div>
+                                <input *ngIf="isMaterialEditMode" type="text" class="form-control" [(ngModel)]="materialData.material_desc">
+                            </td>
                         </tr>
                         <tr>
                             <th scope="row">UOM</th>
-                            <td>{{ materialData.uom }}</td>
+                            <td>
+                                <div *ngIf="!isMaterialEditMode">{{ materialData.uom }}</div>
+                                <input *ngIf="isMaterialEditMode" type="text" class="form-control" style="text-transform: uppercase" [(ngModel)]="materialData.uom">
+                            </td>
                         </tr>
                         <tr>
                             <th scope="row">Latest Average Price</th>
-                            <td>{{ common.getRupiahFormat(getLatestAveragePrice(materialData.detail_price)) }}</td>
+                            <td>{{ common.getRupiahFormat(getLatestAveragePrice(detailPrice)) }}</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <button (click)="!isMaterialEditMode ? onMaterialEditModeChange() : onCancelUpdateMaterial()" type="button" class="btn btn-{{ !isMaterialEditMode ? 'success' : 'danger' }}">{{ !isMaterialEditMode ? 'Edit' : 'Cancel' }}</button>
+                    <button *ngIf="isMaterialEditMode" (click)="onUpdateMaterial()" type="button" class="btn btn-success">Update</button>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-5">
         <div class="card">
-            <div class="card-header">
-                <h4 class="card-title mb-0">Average Price History</h4>
+            <div class="card-header align-items-center d-flex">
+                <h4 class="card-title mb-0 flex-grow-1">Average Price History</h4>
             </div>
             <div class="card-body">
                 <ngx-simplebar class="p-3" style="max-height: 364px;">
-                    <div class="acitivity-timeline acitivity-main">
-                        <div *ngFor="let price of materialData.detail_price; let i = index" class="acitivity-item d-flex {{ common.isFirstOrLastIndex(materialData.detail_price, price) ? '' : 'py-2' }}"> <!--py3-->
-                            <div class="flex-shrink-0 avatar-xs acitivity-avatar">
-                                <div class="avatar-title bg-soft-secondary text-secondary rounded-circle">
-                                    <i class="ri-money-dollar-circle-line"></i>
+                    <div *ngIf="detailPrice.length > 0;else avgIsEmpty" class="acitivity-timeline acitivity-main">
+                        <div *ngFor="let price of detailPrice; let i = index" class="acitivity-item d-flex {{ common.isFirstOrLastIndex(detailPrice, price) ? '' : 'py-2' }}"> <!--py3-->
+                            <ng-container *ngIf="!price.is_removed">
+                                <div class="flex-shrink-0 avatar-xs acitivity-avatar">
+                                    <div class="avatar-title bg-soft-secondary text-secondary rounded-circle">
+                                        <i class="ri-money-dollar-circle-line"></i>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-1">{{ price.year }}</h6>
-                                <p class="mb-1">{{ common.getRupiahFormat(price.average_price || 0) }} </p>
-                                <div class="mb-2" 
-                                    [ngClass]="setAveragePricePercentage(i === materialData.detail_price.length - 1 ? 0 : materialData.detail_price[i + 1].average_price || 0 , price.average_price) > 0 ? 'text-danger' : 'text-success'" >
-                                    <i class="ri ri-arrow-right-{{ setAveragePricePercentage(i === materialData.detail_price.length - 1 ? 0 : materialData.detail_price[i + 1].average_price || 0, materialData.detail_price[i].average_price) > 0 ? 'up' : 'down' }}-line fs-17 align-mimaterialData.detail_pricele"></i>
-                                    {{ setAveragePricePercentage(i === materialData.detail_price.length - 1 ? 0 : materialData.detail_price[i + 1].average_price || 0, materialData.detail_price[i].average_price).toFixed(2) }}%
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">{{ price.year }}</h6>
+                                    <p *ngIf="!isAvgPriceEditMode" class="mb-1">{{ common.getRupiahFormat(price.average_price || 0) }} </p>
+                                    <div class="input-group mb-2" *ngIf="isAvgPriceEditMode">
+                                        <input type="number" class="form-control" [(ngModel)]="price.average_price">
+                                        <button (click)="onDeleteAvgPrice(price.avg_price_id!)" type="button" class="btn btn-danger"><i class="ri ri-delete-bin-line"></i></button>
+                                    </div>
+                                    <div *ngIf="!isAvgPriceEditMode" class="mb-1" 
+                                        [ngClass]="setAveragePricePercentage(i === detailPrice.length - 1 ? 0 : detailPrice[i + 1].average_price || 0 , price.average_price!) > 0 ? 'text-danger' : 'text-success'" >
+                                        <i class="ri ri-arrow-right-{{ setAveragePricePercentage(i === detailPrice.length - 1 ? 0 : detailPrice[i + 1].average_price || 0, detailPrice[i].average_price!) > 0 ? 'up' : 'down' }}-line fs-17 align-midetailPricele"></i>
+                                        {{ setAveragePricePercentage(i === detailPrice.length - 1 ? 0 : detailPrice[i + 1].average_price || 0, detailPrice[i].average_price!).toFixed(2) }}%
+                                    </div>
+                                    <div *ngIf="!isAvgPriceEditMode" class="mb-2">
+                                        <small class="text-muted">Last updated: {{ common.getLocaleDate(price.updated_at!) }} {{ common.getTime(price.updated_at!) }}</small>
+                                    </div>
                                 </div>
-                            </div>
+                            </ng-container>
                         </div>
                     </div>
+                    <ng-template #avgIsEmpty>
+                        <div class="d-flex justify-content-center">
+                            <h5 class="text-muted">Average price history is empty.</h5>
+                        </div>
+                    </ng-template>
                 </ngx-simplebar>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <button *ngIf="detailPrice.length > 0" (click)="!isAvgPriceEditMode ? onAvgPriceEditModeChange() : onCancelUpdateAvgPrice()" type="button" class="me-2 btn btn-{{ !isAvgPriceEditMode ? 'success' : 'danger' }}">{{ !isAvgPriceEditMode ? 'Edit' : 'Cancel' }}</button>
+                        <button [disabled]="isAvgPriceEditMode" type="button" class="btn btn-primary" (click)="openModal(addAvgModal)">Add New</button>
+                    </div>
+                    <button *ngIf="isAvgPriceEditMode" type="button" class="btn btn-success" (click)="onUpdateAvgPrice()">Update</button>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<ng-template #addAvgModal let-modal>
+    <div class="modal-header">
+        <h4 class="modal-title">Add Average Price</h4>
+        <button type="button" class="close" aria-label="Close" (click)="modal.dismiss('Cross click')">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <div class="mb-3">
+            <label for="year">Year</label>
+            <input (input)="onYearTypeChange()" type="number" class="form-control" id="year" [(ngModel)]="avgData.year">
+            <small *ngIf="isYearExist" class="text-danger">The average price in the selected year is already exist!</small>
+        </div>
+        <div class="mb-3">
+            <label for="avgPrice">Average Price</label>
+            <input type="number" class="form-control" id="avgPrice" [(ngModel)]="avgData.average_price">
+        </div>
+        <small *ngIf="isFormInvalid" class="text-danger">Please fill all the field above</small>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-success" (click)="onAddNewAvgPrice()">Save changes</button>
+    </div>
+</ng-template>

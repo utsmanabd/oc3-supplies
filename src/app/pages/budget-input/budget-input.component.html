@@ -117,7 +117,6 @@
               <span *ngIf="data.calculation_by == 'Prodplan'" class="fs-7 text-muted">(Per 1000 Btl)</span>
             </td>
             <td>{{ data.uom }}</td>
-            <td *ngIf="isTabOpen.budgetPlan">{{ common.getRupiahFormat(data.average_price) }}</td>
             <td *ngIf="isTabOpen.budgetPlan">{{ common.replaceDotWithComma(data.bom) }}</td>
             <td *ngIf="!isTabOpen.comparison">{{ common.formatDecimal(common.sumElementFromArray(data.budgeting_data, "quantity")) }}</td>
             <td *ngIf="!isTabOpen.comparison">{{ common.getRupiahFormat(common.sumElementFromArray(data.budgeting_data, "price")) }}</td>
@@ -150,7 +149,7 @@
         </tbody>
         <tfoot class="table-light">
           <tr *ngIf="isTabOpen.budgetPlan">
-            <td colspan="9">Total Price</td>
+            <td colspan="8">Total Price</td>
             <td>{{ common.getRupiahFormat(planPrice) }}</td>
             <td></td>
           </tr>
@@ -340,7 +339,16 @@
           </li>
         </ol>
       </div>
-      <small class="text-warning">*Data with the following Section cannot be added because the Section has not been / is not registered with the Production Line.</small>
+      <small *ngIf="notInclude.lineSection?.length != 0" class="text-warning mt-4">*Data with the following Section cannot be added because the Section has not been / is not registered with the Production Line.</small>
+      <div class="mb-3 mt-3" *ngIf="notInclude.materialInvalid?.length != 0">
+        <label>Not included Material (Invalid Code)</label>
+        <ol *ngIf="isTabOpen.actual" class="list-group list-group-numbered">
+          <li class="list-group-item" *ngFor="let item of notInclude.materialInvalid">
+              {{ item.material_desc }} <span class="ms-1 text-muted"><small>({{ item.material_code }})</small></span>
+          </li>
+        </ol>
+      </div>
+      <small *ngIf="notInclude.materialInvalid?.length != 0" class="text-warning mt-4">*The material above cannot be added because it has an invalid material code.</small>
     </ng-container>
     <ng-template #alertProblem>
       <div class="mb-3" *ngIf="notInclude.duplicateSupply?.length != 0">

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpRequest, HttpHandler, HttpEvent, HttpInterceptor } from '@angular/common/http';
+import { HttpRequest, HttpHandler, HttpEvent, HttpInterceptor, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, switchMap } from 'rxjs/operators';
 import { AuthenticationService } from '../services/auth.service';
@@ -12,7 +12,7 @@ export class ErrorInterceptor implements HttpInterceptor {
         private tokenService: TokenStorageService) { }
 
     intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-        return next.handle(request).pipe(catchError(err => {
+        return next.handle(request).pipe(catchError((err: HttpErrorResponse) => {
             if (!request.url.includes("auth/login") && err.status === 401) {
                 // auto logout if 401 response returned from api
                 this.logOut();
@@ -21,7 +21,7 @@ export class ErrorInterceptor implements HttpInterceptor {
                 return this.handleForbiddenError(request, next);
               }
               const error = err.error.message || err.statusText;
-              return throwError(error);
+              return throwError(() => err);
         }))
     }
 

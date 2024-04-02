@@ -1,9 +1,11 @@
-import { Component } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, ViewChild } from '@angular/core';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Subject, debounceTime } from 'rxjs';
 import { CommonService } from 'src/app/core/services/common.service';
 import { restApiService } from 'src/app/core/services/rest-api.service';
 import { Const } from 'src/app/core/static/const';
+import { GlobalComponent } from 'src/app/global-component';
 
 @Component({
   selector: 'app-material',
@@ -29,6 +31,22 @@ export class MaterialComponent {
   searchTerm = ''
   searchSubject = new Subject<string>()
 
+  uploadedFiles: File | null = null;
+  materialXlsxLink: string = GlobalComponent.API_URL + `file/xlsx/material-template`
+  avgPriceXlsxLink: string = GlobalComponent.API_URL + `file/xlsx/avgprice-template`
+
+  err: {duplicatesMaterial?: any[], notFoundMaterial?: number[], existMaterial?: any[]} = {
+    duplicatesMaterial: [],
+    notFoundMaterial: [],
+    existMaterial: []
+  }
+
+  material: any = { material_code: '', material_desc: '', uom: '', average_price: '' }
+
+  activeTabImport = 'Material'
+
+  @ViewChild('importDetailModal') importDetailModal: any
+
   constructor(private apiService: restApiService, public common: CommonService, private modalService: NgbModal) {
     this.breadCrumbItems = [
       { label: 'Master', active: false },
@@ -45,22 +63,6 @@ export class MaterialComponent {
     this.getMaterialUOM()
     this.searchMaterialWithPagination(this.searchTerm, this.currentPage, this.pageSize).finally(() => this.isLoading = false)
   }
-
-  // async getMaterialWithPagination(page: number, pageSize: number) {
-  //   return new Promise((resolve, reject) => {
-  //     this.apiService.getMaterialByPagination(page, pageSize).subscribe({
-  //       next: (res: any) => {
-  //         this.materialData = res.data
-  //         this.totalItems = res.total_material
-  //         resolve(true)
-  //       },
-  //       error: (err) => {
-  //         this.common.showServerErrorAlert(Const.ERR_GET_MSG("Material"), err)
-  //         reject(err)
-  //       }
-  //     })
-  //   })
-  // }
 
   async searchMaterialWithPagination(term: string, page: number, pageSize: number) {
     return new Promise((resolve, reject) => {
@@ -97,6 +99,9 @@ export class MaterialComponent {
   }
 
   getLatestAveragePrice(detailPrice: any[]): number {
+    if (!detailPrice || detailPrice.length < 1) {
+      return 0
+    }
     const years = detailPrice.map((item) => item.year)
     const latestYear = Math.max(...years)
     return detailPrice.filter((item) => item.year === latestYear)[0].average_price || 0
@@ -106,12 +111,12 @@ export class MaterialComponent {
     this.modalService.open(template, { size: 'lg' })
   }
 
-  onSearch() {
-    this.searchSubject.next(this.searchTerm)
-  }
-
   onYearChange(event: any) {
     this.year = +event.target.value
+  }
+
+  onImportModalNavChange() {
+    this.uploadedFiles = null
   }
 
   onButtonChangeYear(action: string) {
@@ -121,6 +126,159 @@ export class MaterialComponent {
     if (action === 'prev') {
       this.year--
     }
+  }
+
+  onXLSXFileChange(event: any) {
+    this.uploadedFiles = event.target.files[0]
+  }
+  
+  onImportXLSX(type: string) {
+    if (this.uploadedFiles) {
+
+      this.isLoading = true
+      
+      const formData = new FormData();
+      formData.append("file", this.uploadedFiles)
+
+      const handleObserver = {
+        next: (res: any) => {
+          this.isLoading = false
+          this.modalService.dismissAll()
+          this.common.showSuccessAlert("Data imported successfully")
+          this.searchSubject.next("")
+        },
+        error: (err: HttpErrorResponse) => {
+          this.isLoading = false
+          this.modalService.dismissAll()
+          let res = err.error.data
+          if (err.status === 400) {
+            this.common.showCustomAlert(
+              "Operation Cancelled", 
+              `${res.message}`,
+              res.missing_columns || res.message === "Invalid year" ? 'Close' : 'See Details'
+            ).then((result) => {
+              if (result.value && (!res.missing_columns && res.message !== "Invalid year")) {
+                this.err = {
+                  duplicatesMaterial: res.duplicates_material || [],
+                  notFoundMaterial: res.not_included_material || [],
+                  existMaterial: res.exists_material || []
+                }
+                this.modalService.open(this.importDetailModal, { ariaLabelledBy: 'modal-basic-title', centered: true , scrollable: true})
+              }
+            })
+          } else {
+            this.common.showErrorAlert(Const.ERR_INSERT_MSG("Material"), err.statusText)
+          }
+        }
+      }
+
+      if (type === "Material") {
+        this.apiService.uploadMaterialXlsx(formData, this.year).subscribe(handleObserver)
+      }
+
+      if (type === "AvgPrice") {
+        this.apiService.uploadAvgPriceXlsx(formData, this.year).subscribe(handleObserver)
+      }
+    }
+  }
+
+  isFormInvalid = false
+
+  async onSaveChanges() {
+    let isFormFilled = Object.keys(this.material).every(key => this.material[key])
+    if (isFormFilled && this.year > 0) {
+      this.isFormInvalid = false 
+
+      let materialData = {...this.material}
+      delete materialData.average_price
+
+      await this.insertMaterial(materialData).then(async(res) => {
+        let avgPriceData = {
+          material_id: res.data[0],
+          year: this.year,
+          average_price: this.material.average_price
+        }
+        await this.insertAveragePrice(avgPriceData).then(() => {
+          this.modalService.dismissAll()
+          this.searchSubject.next('')
+          this.common.showSuccessAlert("Data inserted successfully")
+        })
+      })
+
+    } else this.isFormInvalid = true
+
+  }
+
+  async insertMaterial(materialData: any) {
+    return new Promise<any>((resolve, reject) => {
+      this.isLoading = true
+      this.apiService.insertMaterial(materialData).subscribe({
+        next: (res) => {
+          this.isLoading = false
+          resolve(res)
+        },
+        error: (err: HttpErrorResponse) => {
+          this.isLoading = false
+          this.common.showErrorAlert(Const.ERR_INSERT_MSG("Material"), err.error.data.message || err.statusText)
+          reject(err)
+        }
+      })
+    })
+  }
+
+  async insertAveragePrice(avgPriceData: any) {
+    return new Promise((resolve, reject) => {
+      this.isLoading = true
+      this.apiService.insertAveragePrice(avgPriceData).subscribe({
+        next: (res) => {
+          this.isLoading = false
+          resolve(res)
+        },
+        error: (err: HttpErrorResponse) => {
+          this.isLoading = false
+          this.common.showErrorAlert(Const.ERR_INSERT_MSG("Average Price"), err.error.data.message || err.statusText)
+          reject(err)
+        }
+      })
+    })
+  }
+
+  onDeleteMaterial(data: any) {
+    this.common.showDeleteWarningAlert().then((result) => {
+      if (result.isConfirmed) {
+        this.isLoading = true
+        this.apiService.updateMaterial(data.id, { is_removed: 1 }).subscribe({
+          next: (res: any) => {
+            if (data.detail_price.length > 0) {
+              const avgDeleteData: any[] = []
+              data.detail_price.forEach((price: any) => {
+                avgDeleteData.push({
+                  id: price.avg_price_id,
+                  data: { is_removed: 1 }
+                })
+              })
+              this.apiService.updateMultipleAvgPrice(avgDeleteData).subscribe({
+                next: (res: any) => {
+                  this.isLoading = false
+                  this.searchSubject.next('')
+                },
+                error: (err) => {
+                  this.isLoading = false
+                  this.common.showErrorAlert(Const.ERR_DELETE_MSG("Average Price"), err)
+                }
+              })
+            } else {
+              this.isLoading = false
+              this.searchSubject.next('')
+            }
+          },
+          error: (err: HttpErrorResponse) => {
+            this.isLoading = false
+            this.common.showErrorAlert(Const.ERR_DELETE_MSG("Material"), err.statusText)
+          }
+        })
+      }
+    })
   }
 
 }

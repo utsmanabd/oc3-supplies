@@ -9,6 +9,7 @@ import { AuthfakeauthenticationService } from "../../core/services/authfake.serv
 import { first } from "rxjs/operators";
 import { ToastService } from "./toast-service";
 import { TokenStorageService } from "src/app/core/services/token-storage.service";
+import { HttpErrorResponse } from "@angular/common/http";
 
 @Component({
   selector: "app-login",
@@ -114,10 +115,10 @@ export class LoginComponent implements OnInit {
           }
           this.submitted = true;
         },
-        error: (err) => {
+        error: (err: HttpErrorResponse) => {
           this.loading = false;
           this.submitted = true;
-          this.errorMessage = `${err}`;
+          this.errorMessage = err.error.message || err.statusText;
           this.isLoginFailed = true;
         },
       });

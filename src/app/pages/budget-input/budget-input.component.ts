@@ -7,6 +7,7 @@ import { Const } from 'src/app/core/static/const';
 import { Material } from './material.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GlobalComponent } from 'src/app/global-component';
+import { HttpErrorResponse } from '@angular/common/http';
 
 interface Column {
   name: string | null;
@@ -32,7 +33,6 @@ export class BudgetInputComponent {
     {name: 'material_desc', col: 'Material Description'},
     {name: 'calculation_by', col: 'Calculation'},
     {name: 'uom', col: 'UOM'},
-    {name: 'average_price', col: 'Avg Price'},
     {name: 'bom', col: 'BOM'},
     {name: 'budgeting_data', col: 'Total Qty'},
     {name: 'budgeting_data', col: 'Total Price'},
@@ -77,13 +77,14 @@ export class BudgetInputComponent {
 
   uploadedFiles: File | null = null
 
-  notInclude: { duplicateSupply?: any[], prodplan?: any[], calculation?: string[], costCenter?: number[], material?: any[], lineSection?: any[]} = {
+  notInclude: { duplicateSupply?: any[], prodplan?: any[], calculation?: string[], costCenter?: number[], material?: any[], lineSection?: any[], materialInvalid?: any[]} = {
     duplicateSupply: [],
     prodplan: [],
     calculation: [],
     costCenter: [],
     material: [],
-    lineSection: []
+    lineSection: [],
+    materialInvalid: []
   }
 
   detailModalForm: { concatenate: string, materialDesc: string, calculationBy: string, budgetingData: any[] } = {
@@ -387,6 +388,17 @@ export class BudgetInputComponent {
     })
   }
 
+  async getAvgPriceByCodeAndYear(materialCode: number, year: number) {
+    return new Promise<any[]>((resolve, reject) => {
+      this.apiService.getAveragePriceByCodeYear(materialCode, year).subscribe({
+        next: (res: any) => {
+          resolve(res.data)
+        },
+        error: (err) => reject(err)
+      })
+    })
+  }
+
   getTotalPrice(suppliesData: any[]) {
     let planPrice = 0
     let actualPrice = 0
@@ -512,14 +524,18 @@ export class BudgetInputComponent {
   }
 
   onMaterialFormSearch(event: any) {
-    setTimeout(() => {
+    setTimeout(async () => {
       if (this.material) {
-        if (!this.material.average_price) {
+        const materialCode = this.material.material_code
+        const avgData = await this.getAvgPriceByCodeAndYear(materialCode, this.year)
+        if (avgData.length > 0 && avgData[0].average_price) {
+          this.isNotHaveAveragePrice = false
+          this.avgPrice = +avgData[0].average_price
+          this.material.average_price = this.avgPrice
+        } else {
           this.isNotHaveAveragePrice = true
           this.avgPrice = null
-        } else {
-          this.isNotHaveAveragePrice = false
-          this.avgPrice = +this.material.average_price
+          this.material.average_price = null
         }
       }
     }, 50)
@@ -572,17 +588,18 @@ export class BudgetInputComponent {
     this.modalService.open(content, { size: 'lg' })
   }
 
-  openUpdateModal(content: TemplateRef<any>, data?: any) {
+  async openUpdateModal(content: TemplateRef<any>, data?: any) {
     if (this.prodplanData.length !== 12) {
       this.showProdplanNotFoundAlert()
     } else {
       if (data) {
+        const avgData = await this.getAvgPriceByCodeAndYear(data.material_code, this.year)
         this.costCenter = { id: data.cost_ctr_id, section: data.section, cost_ctr: data.cost_center }
         this.material = { id: data.material_id, material_code: data.material_code, material_desc: data.material_desc, average_price: data.average_price }
         this.bom = data.bom
         this.selectedCalculationBy.id = data.calculation_id
         this.selectedCalculationBy.name = data.calculation_by
-        this.avgPrice = data.average_price
+        this.avgPrice = +avgData[0].average_price
         this.budgetId = data.budget_id
       }
 
@@ -609,15 +626,23 @@ export class BudgetInputComponent {
     this.uploadedFiles = null
   }
 
-  onAddSupply() {
+  async onAddSupply() {
     if (this.material && this.bom && this.avgPrice && this.prodplanData && this.costCenter) {
       this.isFormInvalid = false
       if (!this.material.average_price) {
-        this.updateMaterial(this.material.id, { average_price: this.avgPrice }).then(success => {
-          if (success) this.budgetId ? this.saveChanges(true) : this.saveChanges()
-        })
+        const avgData = await this.getAvgPriceByCodeAndYear(this.material.material_code, this.year)
+        if (avgData[0].avg_price_id) {
+          this.updateAvgPrice(avgData[0].avg_price_id, { average_price: this.avgPrice }).then(() => {
+            this.saveChanges(this.budgetId ? true : false)
+          })
+        } else {
+          const data = { material_id: this.material.id, year: this.year, average_price: this.avgPrice} 
+          this.insertAvgPrice(data).then(() => {
+            this.saveChanges(this.budgetId ? true : false)
+          })
+        }
       } else {
-        this.budgetId ? this.saveChanges(true) : this.saveChanges()
+        this.saveChanges(this.budgetId ? true : false)
       }
     } else {
       this.isFormInvalid = true
@@ -632,15 +657,16 @@ export class BudgetInputComponent {
     if (this.uploadedFiles) {
       const handleResponse = (res: any) => {
         if (!res.status) {
-          this.common.showCustomAlert("Operation Cancelled", `${res.data.message}`, res.data.invalid_column ? 'Close' : 'See Details').then((result) => {
-            if (result.value && !res.data.invalid_column) {
+          this.common.showCustomAlert("Operation Cancelled", `${res.data.message}`, res.data.missing_columns ? 'Close' : 'See Details').then((result) => {
+            if (result.value && !res.data.missing_columns) {
               this.notInclude = {
                 duplicateSupply: res.data.duplicates_supply || [],
                 prodplan: res.data.not_included_prodplan || [],
                 calculation: res.data.not_included_calculation || [],
                 costCenter: res.data.not_included_cost_ctr || [],
                 material: res.data.not_included_material || [],
-                lineSection: []
+                lineSection: [],
+                materialInvalid: []
               }
               
               this.modalService.open(this.importDetailModal, { ariaLabelledBy: 'modal-basic-title', centered: true , scrollable: true})
@@ -655,7 +681,8 @@ export class BudgetInputComponent {
                 calculation: [],
                 costCenter: [],
                 material: [],
-                lineSection: res.data.not_included_section
+                lineSection: res.data.not_included_section,
+                materialInvalid: res.data.invalid_materials || []
               }
               this.modalService.open(this.importDetailModal, { ariaLabelledBy: 'modal-basic-title', centered: true , scrollable: true})
             }
@@ -733,33 +760,33 @@ export class BudgetInputComponent {
       })
     })
 
-    if (isEditMode) {
-      data.forEach(item => {
-        delete item.budget_id
-      })
-      this.isLoading = true
-      this.apiService.updateSuppliesByBudgetAndProdplanId(this.budgetId, data).subscribe({
+    this.isLoading = true
+
+    const budgetIdNotAvailable = () => {
+      this.isLoading = false
+      return this.common.showErrorAlert(`The material is already exist on ${this.costCenter.section}`, `Failed`)
+    }
+
+    if (this.budgetId !== budgetId) {
+      this.apiService.isBudgetIdAvailable(budgetId).subscribe({
         next: (res: any) => {
-          this.isLoading = false
-          this.refreshFilterSubject.next(this.isFilterChange ? "filterChange" : "Update")
-          this.modalService.dismissAll("Edit")
+          if (res.is_available) {
+            if (isEditMode) {
+              this.updateSuppliesByBudgetAndProdplanId(this.budgetId, data)
+            } else {
+              this.insertSupplyBudget(data)
+            }
+          } else budgetIdNotAvailable()
         },
         error: (err) => {
           this.isLoading = false
-          this.common.showErrorAlert(Const.ERR_UPDATE_MSG("Supplies"), err)
+          this.common.showErrorAlert(Const.ERR_GET_MSG("Budget Id"), err)
         }
       })
     } else {
-      this.apiService.isBudgetIdAvailable(budgetId).subscribe({
-        next: async (res: any) => {
-          if (!res.is_available) {
-            this.common.showErrorAlert(`Supply is already exist on ${this.costCenter.section} - ${this.costCenter.cost_ctr}!`, "Already Exist")
-          } else {
-            this.insertSupplyBudget(data)
-          }
-        },
-        error: (err) => this.common.showErrorAlert(Const.ERR_GET_MSG("Budget Id"), err)
-      })
+      if (isEditMode) {
+        this.updateSuppliesByBudgetAndProdplanId(this.budgetId, data)
+      }
     }
   }
 
@@ -811,17 +838,35 @@ export class BudgetInputComponent {
     this.suppliesData[index].is_selected = condition
   }
 
-  async updateMaterial(id: any, data: any) {
+  async updateAvgPrice(id: number, data: any) {
     return new Promise((resolve, reject) => {
       this.isLoading = true;
-      this.apiService.updateMaterial(id, data).subscribe({
+      this.apiService.updateAveragePrice(id, data).subscribe({
         next: (res: any) => {
           this.isLoading = false
           resolve(true)
         },
         error: (err) => {
           this.isLoading = false
-          this.common.showErrorAlert(Const.ERR_UPDATE_MSG("Material"), err)
+          this.common.showErrorAlert(Const.ERR_UPDATE_MSG("Avg Price"), err)
+          reject(err)
+        }
+      })
+    })
+  }
+
+  async insertAvgPrice(data: any) {
+    return new Promise<number>((resolve, reject) => {
+      this.isLoading = true;
+      this.apiService.insertAveragePrice(data).subscribe({
+        next: (res: any) => {
+          this.isLoading = false
+          const id = res.data[0]
+          resolve(id)
+        },
+        error: (err: HttpErrorResponse) => {
+          this.isLoading = false
+          this.common.showErrorAlert(Const.ERR_INSERT_MSG("Avg Price"), err.statusText)
           reject(err)
         }
       })
@@ -862,6 +907,21 @@ export class BudgetInputComponent {
     })
   }
 
+  updateSuppliesByBudgetAndProdplanId(budgetId: string, data: any) {
+    this.isLoading = true
+      this.apiService.updateSuppliesByBudgetAndProdplanId(budgetId, data).subscribe({
+        next: (res: any) => {
+          this.isLoading = false
+          this.refreshFilterSubject.next(this.isFilterChange ? "filterChange" : "Update")
+          this.modalService.dismissAll("Edit")
+        },
+        error: (err) => {
+          this.isLoading = false
+          this.common.showErrorAlert(Const.ERR_UPDATE_MSG("Supplies"), err)
+        }
+      })
+  }
+
   insertSupplyBudget(data: any) {
     this.isLoading = true
     this.apiService.insertSupplies(data).subscribe({
@@ -871,7 +931,6 @@ export class BudgetInputComponent {
         if (this.modalService.hasOpenModals()) {
           this.modalService.dismissAll()
         }
-        this.common.showSuccessAlert("Supply updated successfully!")
       },
       error: (err) => {
         this.isLoading = false
@@ -969,7 +1028,6 @@ export class BudgetInputComponent {
           material_desc: supply.material_desc,
           calculation_by: supply.calculation_by,
           uom: supply.uom,
-          average_price: supply.average_price,
           bom: supply.bom,
           calculation_id: supply.calculation_id,
           cost_ctr_id: supply.cost_ctr_id,
