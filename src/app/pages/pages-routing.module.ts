@@ -11,6 +11,7 @@ import { CostCenterComponent } from './master/cost-center/cost-center.component'
 import { CalculationBudgetComponent } from './master/calculation-budget/calculation-budget.component';
 import { MaterialComponent } from './master/material/material.component';
 import { DetailMaterialComponent } from './master/material/detail-material/detail-material.component';
+import { LineComponent } from './master/line/line.component';
 
 const routes: Routes = [
     {
@@ -36,6 +37,10 @@ const routes: Routes = [
     {
       path: "master/cost-center",
       component: CostCenterComponent
+    },
+    {
+      path: "master/factory-line",
+      component: LineComponent
     },
     {
       path: "master/calc-budget",

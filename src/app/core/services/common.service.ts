@@ -1,6 +1,11 @@
 import { Injectable } from '@angular/core';
 import Swal from 'sweetalert2';
 import { Const } from '../static/const';
+import { Observable } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+
+
+type AlertMessageType = "GET" | "INSERT" | "EDIT" | "DELETE"
 
 @Injectable({
   providedIn: 'root'
@@ -278,4 +283,24 @@ export class CommonService {
       cancelButtonColor: 'rgb(243, 78, 78)',
     });
   }
+
+  async handleHTTPResponse (apiFunction: Observable<any>, dataTitle: string, type: AlertMessageType) {
+    return new Promise<any>((resolve, reject) => {
+        apiFunction.subscribe({
+            next: (res: any) => {
+                resolve(res)
+            },
+            error: (err: any) => {
+                const errorMessage = 
+                  type === 'GET' ? Const.ERR_GET_MSG(dataTitle)
+                  : type === 'INSERT' ? Const.ERR_INSERT_MSG(dataTitle)
+                    : type === 'EDIT' ? Const.ERR_UPDATE_MSG(dataTitle)
+                      : type === 'DELETE' ? Const.ERR_DELETE_MSG(dataTitle) : ''
+                this.showErrorAlert(errorMessage, err.statusText || err)
+                reject(err)
+            }
+        })
+    })
+  }
 }
+

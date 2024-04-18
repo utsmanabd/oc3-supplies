@@ -1,5 +1,5 @@
 import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { CommonModule, DecimalPipe, JsonPipe } from '@angular/common';
+import { CommonModule, DatePipe, DecimalPipe, JsonPipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgbToastModule, NgbProgressbarModule, NgbPaginationModule, NgbTypeahead, NgbAccordionModule, NgbNavModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 
@@ -31,6 +31,7 @@ import { CostCenterComponent } from './master/cost-center/cost-center.component'
 import { CalculationBudgetComponent } from './master/calculation-budget/calculation-budget.component';
 import { UsersComponent } from './master/users/users.component';
 import { DetailMaterialComponent } from './master/material/detail-material/detail-material.component';
+import { LineComponent } from './master/line/line.component';
 
 @NgModule({
   declarations: [
@@ -44,7 +45,8 @@ import { DetailMaterialComponent } from './master/material/detail-material/detai
     CostCenterComponent,
     CalculationBudgetComponent,
     UsersComponent,
-    DetailMaterialComponent
+    DetailMaterialComponent,
+    LineComponent
   ],
   imports: [
     CommonModule,
@@ -69,7 +71,7 @@ import { DetailMaterialComponent } from './master/material/detail-material/detai
     NgbTooltipModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  providers: [DecimalPipe]
+  providers: [DecimalPipe, DatePipe]
 })
 export class PagesModule { 
   constructor() {

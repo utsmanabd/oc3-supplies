@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ViewChild } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { Subject, debounceTime } from 'rxjs';
 import { CommonService } from 'src/app/core/services/common.service';
@@ -47,7 +48,7 @@ export class MaterialComponent {
 
   @ViewChild('importDetailModal') importDetailModal: any
 
-  constructor(private apiService: restApiService, public common: CommonService, private modalService: NgbModal) {
+  constructor(private apiService: restApiService, public common: CommonService, private modalService: NgbModal, private router: Router, private route: ActivatedRoute) {
     this.breadCrumbItems = [
       { label: 'Master', active: false },
       { label: 'Material Supplies', active: true }
@@ -62,6 +63,7 @@ export class MaterialComponent {
     this.isLoading = true;
     this.getMaterialUOM()
     this.searchMaterialWithPagination(this.searchTerm, this.currentPage, this.pageSize).finally(() => this.isLoading = false)
+    
   }
 
   async searchMaterialWithPagination(term: string, page: number, pageSize: number) {
@@ -108,7 +110,16 @@ export class MaterialComponent {
   }
 
   openModal(template: any) {
-    this.modalService.open(template, { size: 'lg' })
+    this.modalService.open(template, { size: 'lg', centered: true }).result.then(
+      (result) => this.resetModalValue(),
+      (reason) => this.resetModalValue()
+    )
+  }
+
+  resetModalValue() {
+    this.isFormInvalid = false
+    this.uploadedFiles = null
+    Object.keys(this.material).forEach(key => this.material[key] = null)
   }
 
   onYearChange(event: any) {

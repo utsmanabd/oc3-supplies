@@ -16,6 +16,8 @@ interface ProdplanData {
   plan?: number;
   actual?: number;
   month?: number;
+  budgetPlan?: number;
+  budgetActual?: number;
 }
 
 @Component({
@@ -36,6 +38,12 @@ export class DashboardComponent {
   sectionBudgetBarChart!: ChartType;
   sectionBudgetData = this.emptyChartData()
   sectionActualData = this.emptyChartData()
+  sectionBudgetBefore: any[] = []
+  sectionActualBefore: any[] = []
+
+  lineMonthColumnChart!: ChartType;
+  lineMonthBudgetData = this.emptyChartData()
+  lineMonthActualData = this.emptyChartData()
 
   totalLineBudgetDonutChart!: ChartType;
   totalLineBudgetData = this.emptyChartData()
@@ -89,6 +97,12 @@ export class DashboardComponent {
   isBudgetNotEmpty: boolean = false
   showTreemapLabels = false
 
+  months: any[] = []
+  selectedMonth = {
+    number: -1,
+    name: 'All Month'
+  }
+
   @ViewChild("line") line!: ElementRef
   @ViewChild("section") section!: ElementRef
 
@@ -100,22 +114,24 @@ export class DashboardComponent {
   }
 
   async ngOnInit() {
+    this.months = [{ number: -1, name: 'All Month'}]
     await this.getBudgetPerLine(this.year)
     await this.getActualPerLine(this.year)
-    await this.getProdplanByLine(this.year, this.selectedLine.id)
-    await this.getActualProdplanByLine(this.year, this.selectedLine.id)
-    await this.getBudgetPerSection(this.year, this.selectedLine.id)
-    await this.getActualPerSection(this.year, this.selectedLine.id)
+    await this.getBudgetPerSectionAndMonth(this.year, this.selectedLine.id)
+    await this.getActualPerSectionAndMonth(this.year, this.selectedLine.id)
+    // await this.getBudgetPerSection(this.year, this.selectedLine.id)
+    // await this.getActualPerSection(this.year, this.selectedLine.id)
     await this.getBudgetPerSupply(this.year, this.selectedLine.id).then(() => {
-      this.showTreemapLabels = false;
+      this.showTreemapLabels = true;
       this.lineFiveBiggestSupply = this.lineFiveBiggestBudget
       this.sectionFiveBiggestSupply = this.sectionFiveBiggestBudget
     })
     await this.getActualPerSupply(this.year, this.selectedLine.id)
-    await this.getBudgetPerSectionAndMonth(this.year, this.selectedLine.id)
-    await this.getActualPerSectionAndMonth(this.year, this.selectedLine.id)
+    await this.getProdplanByLine(this.year, this.selectedLine.id)
+    await this.getActualProdplanByLine(this.year, this.selectedLine.id)
     this._factoryLineBudgetColumnChart('["--vz-primary", "--vz-success"]');
     this._sectionBudgetBarChart('["--vz-primary", "--vz-info"]');
+    this._lineBudgetMonthColumnChart('["--vz-primary", "--vz-success"]')
     this._totalLineBudgetDonutChart('["--vz-success", "--vz-primary", "--vz-info", "--vz-success-rgb, 0.60", "--vz-primary-rgb, 0.45", "--vz-info-rgb, 0.30"]');
     this._supplyBudgetTreemapChart('["--vz-primary"]');
     this._sectionBudgetMonthHeatmapChart('["--vz-success", "--vz-card-bg-custom"]');
@@ -192,126 +208,88 @@ export class DashboardComponent {
     })
   }
 
-  async getProdplanByLine(year: number, line: number) {
-    return new Promise((resolve, reject) => {
-      this.isLoading = true;
-      this.apiService.resetCachedData("prodplanYearLine")
-      this.apiService.getProdplanByYearAndLine(year, line).subscribe({
-        next: (res: any) => {
-          let data: any[] = res.data
-          this.prodplanData.splice(0)
-          data.forEach(item => {
-            this.prodplanData.push({
-              actual: 0,
-              plan: item.prodplan,
-              month: item.month
-            })
-          })
-        },
-        error: (err) => {
-          this.isLoading = false;
-          this.common.showServerErrorAlert(Const.ERR_GET_MSG("Prodplan"), err)
-          reject(err);
-        },
-        complete: () => {
-          this.isLoading = false;
-          resolve(true)
-        }
-      })
-    })
-  }
+  // async getBudgetPerSection(year: number, lineId: number) {
+  //   return new Promise((resolve, reject) => {
+  //     this.isLoading = true;
+  //     this.apiService.getBudgetPerSection(year, lineId).subscribe({
+  //       next: (res: any) => {
+  //         let data: any[] = res.data
+          
+  //         const allMonthsData = Array.from(
+  //           [...data].reduce((acc, { cost_ctr_id, section, price }) => {
+  //               const existingItem = acc.get(cost_ctr_id);
+  //               if (existingItem) {
+  //                   existingItem.price += price;
+  //               } else {
+  //                   acc.set(cost_ctr_id, { cost_ctr_id, section, price });
+  //               }
+  //               return acc;
+  //           }, new Map()),
+  //           ([, value]) => value
+  //         );
+          
+  //         console.log(data);
+  //         console.log(allMonthsData);
+          
 
-  async getActualProdplanByLine(year: number, lineId: number) {
-    return new Promise((resolve, reject) => {
-      this.isLoading = true;
-      this.apiService.getActualProdplanByLine(year, lineId).subscribe({
-        next: (res: any) => {
-          let data: any[] = res.data
-          data.forEach(item => {
-            const index = this.prodplanData.findIndex(obj => obj.month === item.month)
-            if (index !== -1) {
-              this.prodplanData[index].actual = item.prodplan
-            }
-          })
-        },
-        error: (err) => {
-          this.isLoading = false;
-          this.common.showServerErrorAlert(Const.ERR_GET_MSG("Actual Prodplan"), err)
-          reject(err);
-        },
-        complete: () => {
-          this.isLoading = false;
-          resolve(true)
-        }
-      })
-    })
-  }
+  //         this.sectionBudgetData = {
+  //           rawData: allMonthsData,
+  //           categories: [...allMonthsData].map(item => item.section),
+  //           series: [...allMonthsData].map(item => item.price)
+  //         }
+  //       },
+  //       error: (err) => {
+  //         this.isLoading = false
+  //         this.common.showServerErrorAlert(Const.ERR_GET_MSG("Budget Per Section"), err)
+  //         reject(err)
+  //       },
+  //       complete: () => {
+  //         this.isLoading = false;
+  //         resolve(true)
+  //       }
+  //     })
+  //   })
+  // }
 
-  async getBudgetPerSection(year: number, lineId: number) {
-    return new Promise((resolve, reject) => {
-      this.isLoading = true;
-      this.apiService.getBudgetPerSection(year, lineId).subscribe({
-        next: (res: any) => {
-          let data: any[] = res.data
+  // async getActualPerSection(year: number, lineId: number) {
+  //   return new Promise((resolve, reject) => {
+  //     this.isLoading = true;
+  //     this.apiService.getActualPerSection(year, lineId).subscribe({
+  //       next: (res: any) => {
+  //         let data: any[] = res.data
 
-          this.sectionBudgetData = {
-            rawData: data,
-            categories: [...data].map(item => item.section),
-            series: [...data].map(item => item.price)
-          }
-        },
-        error: (err) => {
-          this.isLoading = false
-          this.common.showServerErrorAlert(Const.ERR_GET_MSG("Budget Per Section"), err)
-          reject(err)
-        },
-        complete: () => {
-          this.isLoading = false;
-          resolve(true)
-        }
-      })
-    })
-  }
+  //         this.transformBudgetActual(this.sectionBudgetData.rawData!, data, "cost_ctr_id")
 
-  async getActualPerSection(year: number, lineId: number) {
-    return new Promise((resolve, reject) => {
-      this.isLoading = true;
-      this.apiService.getActualPerSection(year, lineId).subscribe({
-        next: (res: any) => {
-          let data: any[] = res.data
+  //         this.sectionBudgetData.rawData?.sort((a, b) => a.cost_ctr_id - b.cost_ctr_id);
+  //         this.sectionBudgetData.series = [...this.sectionBudgetData.rawData!].map(item => item.price)
+  //         this.sectionBudgetData.categories = [...this.sectionBudgetData.rawData!].map(item => item.section)
 
-          this.transformBudgetActual(this.sectionBudgetData.rawData!, data, "cost_ctr_id")
+  //         data.sort((a, b) => a.cost_ctr_id - b.cost_ctr_id);
 
-          this.sectionBudgetData.rawData?.sort((a, b) => a.cost_ctr_id - b.cost_ctr_id);
-          this.sectionBudgetData.series = [...this.sectionBudgetData.rawData!].map(item => item.price)
-          this.sectionBudgetData.categories = [...this.sectionBudgetData.rawData!].map(item => item.section)
+  //         this.sectionActualData = {
+  //           rawData: data,
+  //           categories: [...data].map(item => item.section),
+  //           series: [...data].map(item => item.price)
+  //         }
 
-          data.sort((a, b) => a.cost_ctr_id - b.cost_ctr_id);
-
-          this.sectionActualData = {
-            rawData: data,
-            categories: [...data].map(item => item.section),
-            series: [...data].map(item => item.price)
-          }
-
-          this.sectionData = [...data].map(item => { return { sectionId: item.cost_ctr_id, section: item.section } }).sort((a, b) => a.sectionId - b.sectionId)
-          this.selectedSection = {
-            id: this.sectionData[0].sectionId,
-            name: this.sectionData[0].section
-          }
-        },
-        error: (err) => {
-          this.isLoading = false
-          this.common.showServerErrorAlert(Const.ERR_GET_MSG("Actual Per Section"), err)
-          reject(err)
-        },
-        complete: () => {
-          this.isLoading = false;
-          resolve(true)
-        }
-      })
-    })
-  }
+  //         this.sectionData = [...data].map(item => { return { sectionId: item.cost_ctr_id, section: item.section } }).sort((a, b) => a.sectionId - b.sectionId)
+  //         this.selectedSection = {
+  //           id: this.sectionData[0].sectionId,
+  //           name: this.sectionData[0].section
+  //         }
+  //       },
+  //       error: (err) => {
+  //         this.isLoading = false
+  //         this.common.showServerErrorAlert(Const.ERR_GET_MSG("Actual Per Section"), err)
+  //         reject(err)
+  //       },
+  //       complete: () => {
+  //         this.isLoading = false;
+  //         resolve(true)
+  //       }
+  //     })
+  //   })
+  // }
 
   async getBudgetPerSupply(year: number, lineId: number) {
     return new Promise((resolve, reject) => {
@@ -328,6 +306,7 @@ export class DashboardComponent {
 
           const filteredSectionSupply = [...data].filter(item => item.section == this.selectedSection.name)
           this.sectionSupplyBudgetData = {
+            rawData: filteredSectionSupply,
             series: [...filteredSectionSupply].map(item => ({x: item.material_desc, y: item.price}))
           }
           this.sectionFiveBiggestBudget = [...filteredSectionSupply].slice(0, 5)
@@ -361,6 +340,7 @@ export class DashboardComponent {
 
           const filteredSectionSupply = [...data].filter(item => item.section == this.selectedSection.name)
           this.sectionSupplyActualData = {
+            rawData: filteredSectionSupply,
             series: [...filteredSectionSupply].map(item => ({x: item.material_desc, y: item.price}))
           }
           this.sectionFiveBiggestActual = [...filteredSectionSupply].slice(0, 5)
@@ -385,20 +365,49 @@ export class DashboardComponent {
       this.apiService.getBudgetPerSectionAndMonth(year, lineId).subscribe({
         next: (res: any) => {
           let data: any[] = res.data
+
+          const allMonthsData = Array.from(
+            [...data].reduce((acc, { cost_ctr_id, section, price }) => {
+                const existingItem = acc.get(cost_ctr_id);
+                if (existingItem) {
+                    existingItem.price += price;
+                } else {
+                    acc.set(cost_ctr_id, { cost_ctr_id, section, price });
+                }
+                return acc;
+            }, new Map()),
+            ([, value]) => value
+          );
+
+          // sectionBudgetData init
+          this.sectionBudgetData = {
+            rawData: allMonthsData,
+            categories: [...allMonthsData].map(item => item.section),
+            series: [...allMonthsData].map(item => item.price)
+          }
+
+          this.sectionBudgetBefore = [...this.sectionBudgetData.series!].map(price => price)
+
           data.forEach((item) => item.id = +`${item.month}${item.cost_ctr_id}`)
           
+          // sectionBudgetMonthHeatmapData init
           this.sectionBudgetMonthHeatmapData = {
-            rawData: data,
+            rawData: [...data],
             series: this.transformHeatmapSeries([...data])
           }
-          
-          const sectionMonthBudgetData = [...data].filter(item => item.cost_ctr_id === this.selectedSection.id)
-          this.sectionBudgetMonthColumnData = {
-            rawData: sectionMonthBudgetData,
-            series: [...sectionMonthBudgetData].map(item => item.price),
-            categories: [...sectionMonthBudgetData].map(item => this.common.getSimpleMonthName(item.month))
+
+          const lineMonthBudgetData = Object.values([...data].reduce((acc, { month, price }) => {
+            acc[month] = (acc[month] || 0) + price;
+            return acc;
+          }, {})).map((price, index) => ({ month: index + 1, price }));
+
+          // lineMonthBudgetData init
+          this.lineMonthBudgetData = {
+            rawData: lineMonthBudgetData,
+            series: [...lineMonthBudgetData].map(item => item.price),
+            categories: [...lineMonthBudgetData].map(item => this.common.getSimpleMonthName(item.month))
           }
-          
+
         },
         error: (err) => {
           this.isLoading = false
@@ -419,8 +428,47 @@ export class DashboardComponent {
       this.apiService.getActualPerSectionAndMonth(year, lineId).subscribe({
         next: (res: any) => {
           let data: any[] = res.data
+
+          const allMonthsData = Array.from(
+            [...data].reduce((acc, { cost_ctr_id, section, price }) => {
+                const existingItem = acc.get(cost_ctr_id);
+                if (existingItem) {
+                    existingItem.price += price;
+                } else {
+                    acc.set(cost_ctr_id, { cost_ctr_id, section, price });
+                }
+                return acc;
+            }, new Map()),
+            ([, value]) => value
+          );
+          
+          // Merging section actual and budget
+          this.transformBudgetActual(this.sectionBudgetData.rawData!, allMonthsData, "cost_ctr_id")
+
+          this.sectionBudgetData.rawData?.sort((a, b) => a.cost_ctr_id - b.cost_ctr_id);
+          this.sectionBudgetData.series = [...this.sectionBudgetData.rawData!].map(item => item.price)
+          this.sectionBudgetData.categories = [...this.sectionBudgetData.rawData!].map(item => item.section)
+
+          allMonthsData.sort((a, b) => a.cost_ctr_id - b.cost_ctr_id);
+
+          // sectionData init
+          this.sectionData = [...allMonthsData].map(item => { return { sectionId: item.cost_ctr_id, section: item.section } }).sort((a, b) => a.sectionId - b.sectionId)
+          this.selectedSection = {
+            id: this.sectionData[0].sectionId,
+            name: this.sectionData[0].section
+          }
+
+          // sectionActualData init
+          this.sectionActualData = {
+            rawData: allMonthsData,
+            categories: [...allMonthsData].map(item => item.section),
+            series: [...allMonthsData].map(item => item.price)
+          }
+          this.sectionActualBefore = [...this.sectionActualData.series!].map(price => price)
+
           data.forEach((item) => item.id = +`${item.month}${item.cost_ctr_id}`)
 
+          // Merging heatmap actual and budget data
           this.transformBudgetActual(this.sectionBudgetMonthHeatmapData.rawData!, data, 'id')
           
           this.sectionBudgetMonthHeatmapData.rawData?.sort((a, b) => a.cost_ctr_id - b.cost_ctr_id);
@@ -428,25 +476,119 @@ export class DashboardComponent {
 
           this.sectionBudgetMonthHeatmapData.series = this.transformHeatmapSeries([...this.sectionBudgetMonthHeatmapData.rawData!])
 
+          // sectionActualMonthHeatmapData init
           this.sectionActualMonthHeatmapData = {
             rawData: data,
             series: this.transformHeatmapSeries([...data])
           }
+          
+          const sectionMonthBudgetData = [...this.sectionBudgetMonthHeatmapData.rawData!].filter(item => item.cost_ctr_id === this.selectedSection.id)
+
+          // sectionBudgetMonthColumnData init
+          this.sectionBudgetMonthColumnData = {
+            rawData: sectionMonthBudgetData,
+            series: [...sectionMonthBudgetData].map(item => item.price),
+            categories: [...sectionMonthBudgetData].map(item => this.common.getSimpleMonthName(item.month))
+          }
+
+          const months = [...sectionMonthBudgetData].map(item => ({ number: +item.month, name: this.common.getMonthName(+item.month)}))
+          this.selectedMonth = this.months[0]
+          this.months.splice(1)
+          months.forEach(month => this.months.push(month))
 
           let sectionMonthActualData = [...data].filter(item => item.cost_ctr_id === this.selectedSection.id)
 
+          // Merging section month column actual and budget
           this.transformBudgetActual(this.sectionBudgetMonthColumnData.rawData!, sectionMonthActualData, 'month')
 
+          // sectionActualMonthColumnData init
           this.sectionActualMonthColumnData = {
             rawData: sectionMonthActualData.sort((a, b) => a.month - b.month),
             series: [...sectionMonthActualData].map(item => item.price),
             categories: [...sectionMonthActualData].map(item => this.common.getSimpleMonthName(item.month))
           }
+
+          const lineMonthActualData = Object.values([...data].reduce((acc, { month, price }) => {
+            acc[month] = (acc[month] || 0) + price;
+            return acc;
+          }, {})).map((price, index) => ({ month: index + 1, price }));
+
+          // lineMonthActualData init
+          this.lineMonthActualData = {
+            rawData: lineMonthActualData,
+            series: [...lineMonthActualData].map(item => item.price),
+            categories: [...lineMonthActualData].map(item => this.common.getSimpleMonthName(item.month))
+          }
+          
         },
         error: (err) => {
           this.isLoading = false
           this.common.showErrorAlert(Const.ERR_GET_MSG("Actual Per Section and Month"), err)
           reject(err)
+        },
+        complete: () => {
+          this.isLoading = false;
+          resolve(true)
+        }
+      })
+    })
+  }
+
+  async getProdplanByLine(year: number, line: number) {
+    return new Promise((resolve, reject) => {
+      this.isLoading = true;
+      this.apiService.resetCachedData("prodplanYearLine")
+      this.apiService.getProdplanByYearAndLine(year, line).subscribe({
+        next: (res: any) => {
+          let data: any[] = res.data
+
+          const planActualMonth = [...this.lineMonthBudgetData.rawData!].map(plan => ({
+            month: parseInt(plan.month),
+            budgetPlan: parseInt(plan.price) || 0,
+            budgetActual: parseInt(([...this.lineMonthActualData.rawData!].find(act => act.month === plan.month)).price) || 0
+          }))
+          
+          this.prodplanData.splice(0)
+          data.forEach((item) => {
+            this.prodplanData.push({
+              actual: 0,
+              plan: item.prodplan,
+              month: item.month,
+              budgetPlan: (planActualMonth.find(plan => plan.month === item.month))?.budgetPlan,
+              budgetActual: (planActualMonth.find(actual => actual.month === item.month))?.budgetActual
+            })
+          })
+        },
+        error: (err) => {
+          this.isLoading = false;
+          this.common.showServerErrorAlert(Const.ERR_GET_MSG("Prodplan"), err)
+          reject(err);
+        },
+        complete: () => {
+          this.isLoading = false;
+          resolve(true)
+        }
+      })
+    })
+  }
+
+  async getActualProdplanByLine(year: number, lineId: number) {
+    return new Promise((resolve, reject) => {
+      this.isLoading = true;
+      this.apiService.getActualProdplanByLine(year, lineId).subscribe({
+        next: (res: any) => {
+          let data: any[] = res.data
+          data.forEach(item => {
+            const index = this.prodplanData.findIndex(obj => obj.month === item.month)
+            if (index !== -1) {
+              this.prodplanData[index].actual = item.prodplan
+            }
+          })
+        },
+        error: (err) => {
+          this.isLoading = false;
+          this.common.showServerErrorAlert(Const.ERR_GET_MSG("Actual Prodplan"), err)
+          reject(err);
         },
         complete: () => {
           this.isLoading = false;
@@ -499,6 +641,34 @@ export class DashboardComponent {
     return transformedData;
   }
 
+  
+  onLineMonthChange(month: any) {
+    console.log(month);
+    
+    this.selectedMonth = { number: month.number, name: month.name }
+    console.log('sectionBudgetBefore: ', this.sectionBudgetBefore);
+    console.log('sectionActualBefore: ', this.sectionActualBefore);
+    
+    const filter = [...this.sectionBudgetMonthHeatmapData.rawData!].filter(item => item.month === this.selectedMonth.number)
+    console.log(filter);
+    
+
+    if (this.selectedMonth.number !== -1) {
+      this.sectionBudgetData.series = [...this.sectionBudgetMonthHeatmapData.rawData!].filter(item => item.month === this.selectedMonth.number).map(i => i.price)
+      this.sectionActualData.series = [...this.sectionActualMonthHeatmapData.rawData!].filter(item => item.month === this.selectedMonth.number).map(i => i.price)
+    } else {
+      this.sectionBudgetData.series = [...this.sectionBudgetBefore]
+      this.sectionActualData.series = [...this.sectionActualBefore]
+    }
+
+    console.log('budget: ', this.sectionBudgetData.series);
+    console.log('actual: ', this.sectionActualData.series);
+    
+    
+    
+    this.setSectionBudgetChartValue()
+  }
+
   onFactoryLineChange(event$: any) {
     const lineData = JSON.parse(event$.target.id)
     const lineId = lineData.lineId
@@ -508,13 +678,11 @@ export class DashboardComponent {
   async changeFactoryLine(lineId: number) {
     const index = this.common.getIndexById(this.lineData, lineId, "lineId")
     this.selectedLine = { id: lineId, name: this.lineData[index].line }
-    await this.getProdplanByLine(this.year, lineId)
-    await this.getActualProdplanByLine(this.year, lineId)
-    await this.getBudgetPerSection(this.year, lineId)
-    await this.getActualPerSection(this.year, lineId).then(() => {
-      this.setSectionBudgetChartValue()
-      this.setTotaLineBudgetChartValue(this.isTabOpen.actual)
-    })
+    // await this.getBudgetPerSection(this.year, lineId)
+    // await this.getActualPerSection(this.year, lineId).then(() => {
+    //   this.setSectionBudgetChartValue()
+    //   this.setTotaLineBudgetChartValue(this.isTabOpen.actual)
+    // })
     await this.getBudgetPerSupply(this.year, lineId).then(() => {
       if (this.isTabOpen.budget) {
         this.lineFiveBiggestSupply = this.lineFiveBiggestBudget
@@ -533,9 +701,23 @@ export class DashboardComponent {
     await this.getActualPerSectionAndMonth(this.year, lineId).then(() => {
       this.setSupplyBudgetMonthChartValue(this.isTabOpen.actual)
       this.setBudgetMonthSectionChartValue()
+      this.setLineMonthChartValue()
+
+      this.setSectionBudgetChartValue()
+      this.setTotaLineBudgetChartValue(this.isTabOpen.actual)
     })
+    await this.getProdplanByLine(this.year, lineId)
+    await this.getActualProdplanByLine(this.year, lineId)
     
     this.onSectionChange(this.sectionData[0])
+  }
+
+  setLineMonthChartValue() {
+    this.lineMonthColumnChart.series = [
+      { name: 'Budget', data: this.lineMonthBudgetData.series },
+      { name: 'Actual', data: this.lineMonthActualData.series }
+    ]
+    this.lineMonthColumnChart.xaxis = { categories: this.lineMonthBudgetData.categories }
   }
 
   setSectionBudgetChartValue() {
@@ -630,14 +812,18 @@ export class DashboardComponent {
       .slice(0, 5)
     this.sectionFiveBiggestSupply = this.isTabOpen.budget ? this.sectionFiveBiggestBudget : this.sectionFiveBiggestActual
     this.setBudgetMonthSectionChartValue()
-
-    this.sectionSupplyActualData.series = [...this.supplyActualData.rawData!]
-      .filter(item => item.section == sectionData.section)
-      .map(item => ({x: item.material_desc, y: item.price}))
-    this.sectionSupplyBudgetData.series = [...this.supplyBudgetData.rawData!]
-      .filter(item => item.section == sectionData.section)
-      .map(item => ({x: item.material_desc, y: item.price}))
     
+    const filteredSectionActual = [...this.supplyActualData.rawData!].filter(item => item.section == sectionData.section)
+    const filteredSectionBudget = [...this.supplyBudgetData.rawData!].filter(item => item.section == sectionData.section)
+    this.sectionSupplyActualData = {
+      rawData: filteredSectionActual,
+      series: [...filteredSectionActual].map(item => ({x: item.material_desc, y: item.price}))
+    }
+    this.sectionSupplyBudgetData = {
+      rawData: filteredSectionBudget,
+      series: [...filteredSectionBudget].map(item => ({x: item.material_desc, y: item.price}))
+    }
+
     setTimeout(() => {
       this.setSectionSupplyChartValue(this.isTabOpen.actual)
     }, 300)
@@ -696,6 +882,11 @@ export class DashboardComponent {
     if (event.target.value) this.yearSubject.next(this.year)
   }
 
+  onBudgetActualDropdownChange(mode: string) {
+    const event = { target: { name: JSON.stringify({id: mode == 'Budget' ? 1 : 2, name: mode}) } }
+    this.onBudgetActualTabChange(event)
+  }
+
   onBudgetActualTabChange(event: any) {
     const tab = JSON.parse(event.target.name)
     
@@ -746,7 +937,12 @@ export class DashboardComponent {
             if (this.factoryLineBudgetData.rawData && index !== -1) {
               const lineId = this.factoryLineBudgetData.rawData[index].line_id
               this.changeFactoryLine(lineId)
-              this.line.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+              this.line.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
+              setTimeout(() => {
+                const currentPos = window.scrollY || window.pageYOffset
+                this.isLoading = false
+                window.scrollTo({top: currentPos - 65, behavior: 'auto'})
+              }, 750)
             }
             
           }
@@ -837,6 +1033,11 @@ export class DashboardComponent {
               
               this.onSectionChange(sectionData)
               this.section.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+              setTimeout(() => {
+                const currentPos = window.scrollY || window.pageYOffset
+                this.isLoading = false
+                window.scrollTo({top: currentPos - 65, behavior: 'auto'})
+              }, 500)
             }
           }
         },
@@ -983,7 +1184,7 @@ export class DashboardComponent {
       },
       colors: colors,
       dataLabels: {
-        enabled: false
+        enabled: true
       },
       tooltip: {
         x: {
@@ -1140,10 +1341,25 @@ export class DashboardComponent {
         toolbar: {
           show: false,
         },
+        events: {
+          click: (event: any, context: any, config: any) => {
+            if (config.dataPointIndex !== -1) {
+              let materialCode = 0
+              if (this.isTabOpen.actual) {
+                materialCode = this.sectionSupplyActualData.rawData![config.dataPointIndex].material_code
+              } else {
+                materialCode = this.sectionSupplyBudgetData.rawData![config.dataPointIndex].material_code
+              }
+              this.ngZone.run(() => {
+                this.router.navigate([`./master/material/${materialCode}`])
+              })
+            }
+          }
+        }
       },
       colors: colors,
       dataLabels: {
-        enabled: false
+        enabled: true
       },
       tooltip: {
         x: {
@@ -1152,6 +1368,96 @@ export class DashboardComponent {
         },
         y: {
           formatter: (val: any, opt: any) => this.common.getRupiahFormat(+val)
+        },
+      },
+    };
+  }
+
+
+  private _lineBudgetMonthColumnChart(colors: any) {
+    colors = this.getChartColorsArray(colors);
+    this.lineMonthColumnChart = {
+      series: [{
+        name: "Budget",
+        data: this.lineMonthBudgetData.series,
+      },
+      {
+        name: "Actual",
+        data: this.lineMonthActualData.series,
+      },
+      ],
+      chart: {
+        height: 350,
+        type: "bar",
+        toolbar: {
+          show: false,
+        },
+        events: {
+          click: (event: any, context: any, config: any) => {
+            const index = config.dataPointIndex
+            if (index !== -1) {
+              this.ngZone.run(() => {
+                this.router.navigate(['supplies'], {queryParams: {
+                  lineId: this.selectedLine.id,
+                  year: this.year,
+                  month: this.lineMonthActualData.rawData![index].month,
+                  tab: config.seriesIndex == 0 ? 'Plan' : 'Actual'
+                }})
+              })
+            }
+          }
+        }
+      },
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          columnWidth: "45%",
+          dataLabels: {
+            position: 'top'
+          }
+        },
+      },
+      dataLabels: {
+        enabled: true,
+        textAnchor: 'middle',
+        offsetY: -20,
+        style: {
+          fontWeight: 400,
+          fontSize: "10px",
+          colors: ["#000"],
+        },
+        formatter: (val: any) => this.common.formatBigNumber(+val)
+      },
+      stroke: {
+        show: true,
+        width: 2,
+        colors: ["transparent"],
+      },
+      colors: colors,
+      xaxis: {
+        categories: this.lineMonthBudgetData.categories,
+      },
+      yaxis: {
+        title: {
+          text: "Rp (Rupiah)",
+        },
+        labels: {
+          show: true,
+          formatter: (val: any) => this.common.formatBigNumber(+val)
+        }
+      },
+      grid: {
+        borderColor: "#f1f1f1",
+      },
+      fill: {
+        opacity: 1,
+      },
+      tooltip: {
+        x: {
+          formatter: (val: any, opt: any) => `${this.common.getMonthName(this.lineMonthBudgetData.rawData![opt.dataPointIndex].month)}`
+        },
+        y: {
+          formatter: (val: any) => this.common.getRupiahFormat(+val)
         },
       },
     };

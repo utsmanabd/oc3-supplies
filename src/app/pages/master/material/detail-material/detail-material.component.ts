@@ -55,7 +55,7 @@ export class DetailMaterialComponent {
     ];
   }
 
-  ngOnInit() {
+  async ngOnInit() {
     this.route.params.subscribe( async params => {
       this.materialData = await this.getDetailMaterial(+params['code'])
       this.materialDataBefore = {...this.materialData}
@@ -66,6 +66,7 @@ export class DetailMaterialComponent {
       }
     })
     window.scrollTo({ top: 0, behavior: 'auto' });
+    
   }
 
   async getDetailMaterial(materialCode: number) {
@@ -74,8 +75,6 @@ export class DetailMaterialComponent {
       this.apiService.getMaterialByCode(materialCode).subscribe({
         next: (res: any) => {
           this.isLoading = false;
-          console.log(res.data[0]);
-          
           resolve(res.data[0])
         },
         error: (err) => {
@@ -194,9 +193,6 @@ export class DetailMaterialComponent {
         })
       })
 
-      console.log(avgPriceData);
-      
-      
       this.isLoading = true
       this.apiService.updateMultipleAvgPrice(avgPriceData).subscribe({
         next: (res: any) => {

@@ -204,6 +204,7 @@ export class BudgetInputComponent {
   }
 
   async ngOnInit() {
+    window.scrollTo({ top: 0, behavior: 'auto' });
     await this.getFactoryLine()
     await this.getCalculationBudget()
 
@@ -957,46 +958,62 @@ export class BudgetInputComponent {
       ).then(result => {
         if (result.value) {
           const previousYear = this.year - 1
-          let temporarySuppliesData: any[] = []
           this.isLoading = true
           this.apiService.resetCachedData("suppliesYearLine")
           this.apiService.getSuppliesByYearAndLine(previousYear, this.selectedLine.lineId).subscribe({
-            next: (res: any) => {
+            next: async (res: any) => {
               let data: any[] = res.data
               if (data.length > 0) {
-                data.forEach(item => {
-                  let [, , ...rest] = item.budget_id.split('-')
-                  this.prodplanData.forEach((prodplan) => {
-                    let quantity = 0
-                    let price = 0
-                    let bom = +item.bom * (this.prevBomPercentage / 100)
+                const prepareData = async () => {
+                  let temporarySuppliesData: any[] = []
+                  return new Promise<any[]>((resolve, reject) => {
+                    data.forEach(async (item, index) => {
+                      const getAvgPrice = async () => {
+                        let avgData = await this.getAvgPriceByCodeAndYear(item.material_code, this.year)
+                        return +avgData[0].average_price
+                      }
+                      const avgPrice = await getAvgPrice()
+                      let [, , ...rest] = item.budget_id.split('-')
 
-                    if (item.calculation_id == 1) {
-                      quantity = +prodplan.prodplan / 1000 * bom
-                    } else if (item.calculation_id == 2) {
-                      quantity = prodplan.daily_count * bom
-                    } else if (item.calculation_id == 3) {
-                      quantity = prodplan.weekly_count * bom
-                    } else if (item.calculation_id == 4) {
-                      quantity = prodplan.monthly_count * bom
-                    }
-                    price = quantity * +item.average_price
-                    temporarySuppliesData.push({
-                      budget_id: `${this.year}-${this.selectedLine.lineId}-${rest.join('-')}`,
-                      material_id: item.material_id,
-                      cost_ctr_id: item.cost_ctr_id,
-                      calc_budget_id: item.calculation_id,
-                      prodplan_id: prodplan.id,
-                      bom: bom,
-                      quantity: quantity,
-                      price: price
+                      this.prodplanData.forEach((prodplan) => {
+                        let quantity = 0
+                        let price = 0
+                        let bom = +item.bom * (this.prevBomPercentage / 100)
+    
+                        if (item.calculation_id == 1) {
+                          quantity = +prodplan.prodplan / 1000 * bom
+                        } else if (item.calculation_id == 2) {
+                          quantity = prodplan.daily_count * bom
+                        } else if (item.calculation_id == 3) {
+                          quantity = prodplan.weekly_count * bom
+                        } else if (item.calculation_id == 4) {
+                          quantity = prodplan.monthly_count * bom
+                        }
+                        
+                        price = quantity * avgPrice
+                        temporarySuppliesData.push({
+                          budget_id: `${this.year}-${this.selectedLine.lineId}-${rest.join('-')}`,
+                          material_id: item.material_id,
+                          cost_ctr_id: item.cost_ctr_id,
+                          calc_budget_id: item.calculation_id,
+                          prodplan_id: prodplan.id,
+                          bom: bom,
+                          quantity: quantity,
+                          price: price
+                        })
+                      })
+
+                      if (index === data.length - 1) {
+                        setTimeout(() => resolve(temporarySuppliesData), 150)
+                      }
                     })
                   })
+                }
+                
+                await prepareData().then(supplies => {
+                  this.isLoading = false
+                  this.insertSupplyBudget(supplies)
                 })
-      
-                setTimeout(() => {
-                  this.insertSupplyBudget(temporarySuppliesData)
-                }, 1500)
               } else {
                 this.isLoading = false
                 this.common.showErrorAlert("The previous year's data is empty!", "Failed")
@@ -1005,8 +1022,7 @@ export class BudgetInputComponent {
             error: (err) => {
               this.isLoading = false
               this.common.showErrorAlert(Const.ERR_GET_MSG("Supplies"), err)
-            },
-            complete: () => this.modalService.dismissAll()
+            }
           })
         }
       })

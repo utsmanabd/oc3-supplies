@@ -27,7 +27,7 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="text-uppercase fw-semibold text-white-50 mb-0">Total Budget</p>
+                                <p class="text-uppercase fw-semibold text-white-50 mb-0">Factory Total Budget</p>
                             </div>
                         </div>
                         <div class="d-flex align-items-end justify-content-between mt-4">
@@ -51,7 +51,7 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="text-uppercase fw-semibold text-white-50 mb-0">Total Actual</p>
+                                <p class="text-uppercase fw-semibold text-white-50 mb-0">Factory Total Actual</p>
                             </div>
                         </div>
                         <div class="d-flex align-items-end justify-content-between mt-4">
@@ -122,18 +122,32 @@
                                                 <h4 class="card-title mb-0">Prodplan</h4>    
                                             </ng-template>
                                             <ng-template ngbPanelContent>
-                                                <div class="row g-0 text-center">
-                                                    <div class="col-lg-2 col-md-3 col-sm-4" *ngFor="let data of prodplanData">
-                                                        <div class="p-3 border border-dashed border-start-0">
-                                                            <small class="fw-semibold text-muted mb-2 text-uppercase">{{ common.getMonthName(data.month!) }}</small>
-                                                            <h5 class="mb-1"><span><small>{{ common.formattedNumber(data.actual!) }}</small></span>
-                                                                <span class="text-{{ setProdplanPercentage(data.plan!, data.actual!) >= 0 ? 'success' : 'danger' }} ms-1 fs-12">{{ setProdplanPercentage(data.plan!, data.actual!).toFixed(2) }}%<i
-                                                                       *ngIf="setProdplanPercentage(data.plan!, data.actual!) !== 0" class="ri-arrow-right-{{ setProdplanPercentage(data.plan!, data.actual!) < 0 ? 'down' : 'up' }}-line ms-1 align-middle"></i></span>
-                                                            </h5>
-                                                            <small class="text-muted mb-0">From planning of <span class="fw-semibold">{{ common.formattedNumber(data.plan!) }}</span></small>
+                                                <ngx-simplebar class="p-3" style="max-height: 512px;">
+                                                    <div class="row g-0 text-center">
+                                                        <div class="col-lg-2 col-md-3 col-sm-4" *ngFor="let data of prodplanData">
+                                                            <div class="p-3 border border-dashed border-start-0">
+                                                                <a class="fw-bold mb-2 text-uppercase">{{ common.getMonthName(data.month!) }}</a>
+                                                                <h5 class="mb-1"><span><small>{{ common.formattedNumber(data.actual!) }}</small></span>
+                                                                    <span class="text-{{ setProdplanPercentage(data.plan!, data.actual!) >= 0 ? 'success' : 'danger' }} ms-1 fs-12">{{ setProdplanPercentage(data.plan!, data.actual!).toFixed(2) }}%<i
+                                                                           *ngIf="setProdplanPercentage(data.plan!, data.actual!) !== 0" class="ri-arrow-right-{{ setProdplanPercentage(data.plan!, data.actual!) < 0 ? 'down' : 'up' }}-line ms-1 align-middle"></i></span>
+                                                                </h5>
+                                                                <small class="text-muted mb-0">From planning of <span class="fw-semibold">{{ common.formattedNumber(data.plan!) }}</span></small>
+                                                                <div class="mt-2 bg-light p-2">
+                                                                    <small class="text-muted">Actual
+                                                                        <span>
+                                                                            <h6><span><small>{{ common.getRupiahFormat(data.budgetActual!) }}</small></span>
+                                                                                <span class="text-{{ setProdplanPercentage(data.budgetPlan!, data.budgetActual!) <= 0 ? 'success' : 'danger' }} ms-1 fs-12">{{ setProdplanPercentage(data.budgetPlan!, data.budgetActual!).toFixed(2) }}%<i
+                                                                                    *ngIf="setProdplanPercentage(data.budgetPlan!, data.budgetActual!) !== 0" class="ri-arrow-right-{{ setProdplanPercentage(data.budgetPlan!, data.budgetActual!) < 0 ? 'down' : 'up' }}-line ms-1 align-middle"></i></span>
+                                                                            </h6>
+                                                                        </span>
+                                                                    </small>
+                                                                    <small class="text-muted mb-0">From budget of <span class="fw-semibold">{{ common.getRupiahFormat(data.budgetPlan!) }}</span></small>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
+                                                </ngx-simplebar>
+                                                
                                             </ng-template>
                                         </ngb-panel>
                                     </ngb-accordion>
@@ -149,122 +163,80 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-xl-12" *ngIf="sectionBudgetBarChart && sectionBudgetData.rawData?.length != 0">
+                            <div class="col-xl-12" *ngIf="lineMonthColumnChart && lineMonthBudgetData.rawData?.length != 0">
                                 <div class="card">
                                     <div class="card-header">
-                                        <h4 class="card-title mb-0">Section Budget</h4>
+                                        <h4 class="card-title mb-0">Line Budget by Month</h4>
+                                    </div><!-- end card header -->
+
+                                    <div class="card-body">
+                                        <apx-chart [series]="lineMonthColumnChart.series"
+                                            [chart]="lineMonthColumnChart.chart"
+                                            [dataLabels]="lineMonthColumnChart.dataLabels"
+                                            [plotOptions]="lineMonthColumnChart.plotOptions"
+                                            [yaxis]="lineMonthColumnChart.yaxis"
+                                            [legend]="lineMonthColumnChart.legend"
+                                            [fill]="lineMonthColumnChart.fill"
+                                            [stroke]="lineMonthColumnChart.stroke"
+                                            [tooltip]="lineMonthColumnChart.tooltip"
+                                            [xaxis]="lineMonthColumnChart.xaxis"
+                                            [colors]="lineMonthColumnChart.colors"
+                                            dir="ltr"></apx-chart>
+                                    </div><!-- end card-body -->
+                                </div><!-- end card -->
+                            </div>
+                            <div class="col-xl-3 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-header align-items-center d-flex p-3">
+                                        <h4 class="card-title mb-0 flex-grow-1">Line Total {{ isTabOpen.actual ? 'Actual' : 'Budget' }} Value</h4>
+                                        <div class="me-2">
+                                            <div class="dropdown" ngbDropdown>
+                                                <button class="btn btn-soft-secondary btn-sm arrow-none" href="javascript:void(0);"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" ngbDropdownToggle>
+                                                    <span class="text-uppercase">{{ isTabOpen.budget ? 'Budget' : 'Actual' }}<i
+                                                            class="mdi mdi-chevron-down align-middle ms-1"></i></span>
+                                                </button>
+                                                <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
+                                                    <a class="dropdown-item" (click)="onBudgetActualDropdownChange('Budget')" href="javascript:void(0);" id="udget">Budget</a>
+                                                    <a class="dropdown-item" (click)="onBudgetActualDropdownChange('Actual')" href="javascript:void(0);" id="actual">Actual</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body d-flex justify-content-center align-items-center">
+                                        <apx-chart [series]="totalLineBudgetDonutChart.series"
+                                            [labels]="totalLineBudgetDonutChart.labels"
+                                            [chart]="totalLineBudgetDonutChart.chart"
+                                            [plotOptions]="totalLineBudgetDonutChart.plotOptions"
+                                            [dataLabels]="totalLineBudgetDonutChart.dataLabels"
+                                            [legend]="totalLineBudgetDonutChart.legend"
+                                            [stroke]="totalLineBudgetDonutChart.stroke"
+                                            [yaxis]="totalLineBudgetDonutChart.yaxis"
+                                            [colors]="totalLineBudgetDonutChart.colors" dir="ltr"></apx-chart>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-9" *ngIf="sectionBudgetBarChart && sectionBudgetData.rawData?.length != 0">
+                                <div class="card">
+                                    <div class="card-header align-items-center d-flex p-3">
+                                        <h4 class="card-title mb-0 flex-grow-1">Section Budget</h4>
+                                        <div class="me-2">
+                                            <div class="dropdown" ngbDropdown>
+                                                <button class="btn btn-soft-secondary btn-sm arrow-none" href="javascript:void(0);"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" ngbDropdownToggle>
+                                                    <span class="text-uppercase">{{ selectedMonth.name }}<i
+                                                            class="mdi mdi-chevron-down align-middle ms-1"></i></span>
+                                                </button>
+                                                <div class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
+                                                    <a *ngFor="let month of months" class="dropdown-item" (click)="onLineMonthChange(month)" href="javascript:void(0);">{{ month.name }}</a>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="card-body">
                                             <apx-chart [series]="sectionBudgetBarChart.series" [chart]="sectionBudgetBarChart.chart" [tooltip]="sectionBudgetBarChart.tooltip"
                                             [dataLabels]="sectionBudgetBarChart.dataLabels" [plotOptions]="sectionBudgetBarChart.plotOptions" [yaxis]="sectionBudgetBarChart.yaxis"
                                             [xaxis]="sectionBudgetBarChart.xaxis" [stroke]="sectionBudgetBarChart.stroke" [colors]="sectionBudgetBarChart.colors" dir="ltr"></apx-chart>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-header border-bottom-dashed">
-                                        <ul ngbNav #Animation="ngbNav" [activeId]="activeTab" class="nav nav-pills animation-nav nav-justified gap-2">
-                                            <li *ngFor="let tab of tabData" [ngbNavItem]="tab.id">
-                                                <a ngbNavLink [name]="common.jsonToString(tab)" (click)="onBudgetActualTabChange($event)">
-                                                  {{ tab.name }}
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-xl-9 mb-4" *ngIf="supplyBudgetTreemapChart && supplyBudgetData.rawData?.length != 0">
-                                                <div class="card h-100">
-                                                    <div class="card-header border-bottom-dashed align-items-center d-flex">
-                                                        <h4 class="card-title mb-0 flex-grow-1">Supplies {{ isTabOpen.actual ? 'Actual' : 'Budget' }} Value</h4>
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" [checked]="showTreemapLabels" type="checkbox" id="showLabels" (change)="onTreemapShowLabels($event)">
-                                                            <label class="form-check-label" for="showLabels">Show Labels</label>
-                                                        </div>
-                                                    </div>
-                                                    <div class="card-body">
-                                                        <apx-chart [series]="supplyBudgetTreemapChart.series"
-                                                            [chart]="supplyBudgetTreemapChart.chart" [tooltip]="supplyBudgetTreemapChart.tooltip"
-                                                            [dataLabels]="supplyBudgetTreemapChart.dataLabels"
-                                                            [plotOptions]="supplyBudgetTreemapChart.plotOptions"
-                                                            [title]="supplyBudgetTreemapChart.title" [legend]="supplyBudgetTreemapChart.legend"
-                                                            [colors]="supplyBudgetTreemapChart.colors" dir="ltr"></apx-chart>
-                                                    </div>
-                        
-                                                </div><!-- end card -->
-                                            </div>
-                                            <div class="col-xl-3 mb-4">
-                                                <div class="card h-100">
-                                                    <div class="card-header border-bottom-dashed align-items-center d-flex">
-                                                        <h4 class="card-title mb-0">Line Total {{ isTabOpen.actual ? 'Actual' : 'Budget' }} Value</h4>
-                                                    </div>
-                                                    <div class="card-body d-flex justify-content-center align-items-center">
-                                                        <apx-chart [series]="totalLineBudgetDonutChart.series"
-                                                            [labels]="totalLineBudgetDonutChart.labels"
-                                                            [chart]="totalLineBudgetDonutChart.chart"
-                                                            [plotOptions]="totalLineBudgetDonutChart.plotOptions"
-                                                            [dataLabels]="totalLineBudgetDonutChart.dataLabels"
-                                                            [legend]="totalLineBudgetDonutChart.legend"
-                                                            [stroke]="totalLineBudgetDonutChart.stroke"
-                                                            [yaxis]="totalLineBudgetDonutChart.yaxis"
-                                                            [colors]="totalLineBudgetDonutChart.colors" dir="ltr"></apx-chart>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-xl-4">
-                                                <div class="card">
-                                                    <div class="card-header border-bottom-dashed align-items-center d-flex">
-                                                        <h4 class="card-title mb-0">Top 5 Biggest Supplies {{ isTabOpen.actual ? 'Actual' : 'Budget' }}</h4>
-                                                    </div>
-                                                    <div class="card-body table-responsive">
-                                                        <!-- Striped Rows -->
-                                                        <table class="table table-striped">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th scope="col">#</th>
-                                                                    <th scope="col">Material</th>
-                                                                    <th scope="col">Price</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                <tr *ngFor="let data of lineFiveBiggestSupply; let i = index">
-                                                                    <th scope="row">{{ i + 1 }}</th>
-                                                                    <td>
-                                                                        <div class="fs-6">
-                                                                            <a class="text-reset">{{ data.material_desc }}</a>
-                                                                        </div>
-                                                                        <span class="fs-12 text-muted">{{ data.section }}</span>
-                                                                    </td>
-                                                                    <td>{{ common.getRupiahFormat(data.price) }}</td>
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-xl-8">
-                                                <div class="card">
-                                                    <div class="card-header border-bottom-dashed align-items-center d-flex">
-                                                        <h4 class="card-title mb-0">Section {{ isTabOpen.actual ? 'Actual' : 'Budget' }} by Month</h4>
-                                                    </div>
-                                                    <div class="card-body">
-                                                        <div class="live-preview">
-                                                            <apx-chart [series]="sectionBudgetMonthHeatmapChart.series"
-                                                                [chart]="sectionBudgetMonthHeatmapChart.chart"
-                                                                [dataLabels]="sectionBudgetMonthHeatmapChart.dataLabels"
-                                                                [title]="sectionBudgetMonthHeatmapChart.title"
-                                                                [tooltip]="sectionBudgetMonthHeatmapChart.tooltip"
-                                                                [yaxis]="sectionBudgetMonthHeatmapChart.yaxis"
-                                                                [colors]="sectionBudgetMonthHeatmapChart.colors"
-                                                                [stroke]="sectionBudgetMonthHeatmapChart.stroke" dir="ltr"></apx-chart>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -305,7 +277,7 @@
                                             <div class="col-12">
                                                 <div class="card">
                                                     <div class="card-header">
-                                                        <h4 class="card-title mb-0">Budget by Month</h4>
+                                                        <h4 class="card-title mb-0">Section Budget by Month</h4>
                                                     </div><!-- end card header -->
         
                                                     <div class="card-body">
@@ -398,6 +370,100 @@
                                 </div><!-- end card -->
                             </div><!-- end col -->
                         </div>
+                        <ngb-accordion #acc="ngbAccordion" [closeOthers]="false">
+                            <ngb-panel id="detailLineData">
+                                <ng-template ngbPanelTitle class="accordion-header border-0 bg-transparent">
+                                    <h4 class="card-title mb-0">More Factory Line Data</h4>    
+                                </ng-template>
+                                <ng-template ngbPanelContent>
+                                    <div class="card">
+                                        <div class="card-header p-3">
+                                            <ul ngbNav #Animation="ngbNav" [activeId]="activeTab" class="nav nav-pills animation-nav nav-justified gap-2">
+                                                <li *ngFor="let tab of tabData" [ngbNavItem]="tab.id">
+                                                    <a ngbNavLink [name]="common.jsonToString(tab)" (click)="onBudgetActualTabChange($event)">
+                                                      {{ tab.name }}
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-xl-12 mb-4" *ngIf="supplyBudgetTreemapChart && supplyBudgetData.rawData?.length != 0">
+                                                    <div class="card h-100">
+                                                        <div class="card-header align-items-center d-flex p-3">
+                                                            <h4 class="card-title mb-0 flex-grow-1">Supplies {{ isTabOpen.actual ? 'Actual' : 'Budget' }} Value</h4>
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" [checked]="showTreemapLabels" type="checkbox" id="showLabels" (change)="onTreemapShowLabels($event)">
+                                                                <label class="form-check-label" for="showLabels">Show Labels</label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <apx-chart [series]="supplyBudgetTreemapChart.series"
+                                                                [chart]="supplyBudgetTreemapChart.chart" [tooltip]="supplyBudgetTreemapChart.tooltip"
+                                                                [dataLabels]="supplyBudgetTreemapChart.dataLabels"
+                                                                [plotOptions]="supplyBudgetTreemapChart.plotOptions"
+                                                                [title]="supplyBudgetTreemapChart.title" [legend]="supplyBudgetTreemapChart.legend"
+                                                                [colors]="supplyBudgetTreemapChart.colors" dir="ltr"></apx-chart>
+                                                        </div>
+                            
+                                                    </div><!-- end card -->
+                                                </div>
+                                                <div class="col-xl-4">
+                                                    <div class="card">
+                                                        <div class="card-header align-items-center d-flex p-3">
+                                                            <h4 class="card-title">Top 5 Biggest Supplies {{ isTabOpen.actual ? 'Actual' : 'Budget' }}</h4>
+                                                        </div>
+                                                        <div class="card-body table-responsive">
+                                                            <!-- Striped Rows -->
+                                                            <table class="table table-striped">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th scope="col">#</th>
+                                                                        <th scope="col">Material</th>
+                                                                        <th scope="col">Price</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <tr *ngFor="let data of lineFiveBiggestSupply; let i = index">
+                                                                        <th scope="row">{{ i + 1 }}</th>
+                                                                        <td>
+                                                                            <div class="fs-6">
+                                                                                <a class="text-reset">{{ data.material_desc }}</a>
+                                                                            </div>
+                                                                            <span class="fs-12 text-muted">{{ data.section }}</span>
+                                                                        </td>
+                                                                        <td>{{ common.getRupiahFormat(data.price) }}</td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-xl-8">
+                                                    <div class="card">
+                                                        <div class="card-header align-items-center d-flex p-3">
+                                                            <h4 class="card-title">Section {{ isTabOpen.actual ? 'Actual' : 'Budget' }} by Month</h4>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div class="live-preview">
+                                                                <apx-chart [series]="sectionBudgetMonthHeatmapChart.series"
+                                                                    [chart]="sectionBudgetMonthHeatmapChart.chart"
+                                                                    [dataLabels]="sectionBudgetMonthHeatmapChart.dataLabels"
+                                                                    [title]="sectionBudgetMonthHeatmapChart.title"
+                                                                    [tooltip]="sectionBudgetMonthHeatmapChart.tooltip"
+                                                                    [yaxis]="sectionBudgetMonthHeatmapChart.yaxis"
+                                                                    [colors]="sectionBudgetMonthHeatmapChart.colors"
+                                                                    [stroke]="sectionBudgetMonthHeatmapChart.stroke" dir="ltr"></apx-chart>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ng-template>
+                            </ngb-panel>
+                        </ngb-accordion>
                     </div>
                 </div>
             </div>

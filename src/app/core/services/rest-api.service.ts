@@ -147,6 +147,14 @@ export class restApiService {
     return this.requestHttpPut(`prodplan`, id, data)
   }
 
+  insertActualProdplan(data: any) {
+    return this.requestHttpPost(`prodplan/actual`, data)
+  }
+
+  updateActualProdplan(id: number, data: any) {
+    return this.requestHttpPut(`prodplan/actual`, id, data)
+  }
+
   isProdplanAvailable(year: number, lineId: number) {
     return this.requestHttpGet(`prodplan/year-line/is-available/${year}/${lineId}`)
   }
@@ -267,6 +275,24 @@ export class restApiService {
         catchError(this.handleError)
       )
   }
+  getCountries() {
+    const cacheKey = "countries"
+    return this.requestCachedHttpGet('costctr/countries', cacheKey)
+  }
+
+  searchCostCenterByPagination(term: string, page: number, pageSize: number) {
+    return this.http.post(GlobalComponent.MASTER_API_URL + `costctr/search-pagination?page=${page}&pageSize=${pageSize}`, { search: term }, httpOptions).pipe(
+      catchError(this.handleError)
+    )
+  }
+
+  insertCostCenter(data: any) {
+    return this.requestHttpPost(`costctr`, data)
+  }
+
+  updateCostCenter(id: number, data: any) {
+    return this.requestHttpPut(`costctr`, id, data)
+  }
 
   // Dummy API
 
@@ -281,6 +307,10 @@ export class restApiService {
     }
    }
    return of(items).pipe(delay(500));
+  }
+
+  getDummyProducts() {
+    return this.http.get(`https://dummyjson.com/products`, httpOptions)
   }
 
   // Dashboard

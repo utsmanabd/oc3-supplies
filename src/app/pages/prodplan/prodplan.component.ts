@@ -38,13 +38,15 @@ export class ProdplanComponent {
   isSmallScreen: boolean = false
   isCreateMode: boolean = false
 
-  modalForm = {
+  modalForm: {id: number, actualId?: 0 | null, monthId: number, month: string, daily: number, weekly: number, prodplan: number, actualProdplan?: number | null} = {
     id: 0,
+    actualId: null,
     monthId: 0,
     month: '',
     daily: 0,
     weekly: 0,
-    prodplan: 0
+    prodplan: 0,
+    actualProdplan: null
   }
 
   private clickSubject = new Subject()
@@ -74,6 +76,7 @@ export class ProdplanComponent {
       }
       this.apiService.resetCachedData("prodplanYearLine")
       await this.getProdplanByYearAndLine(this.year, this.lineId)
+      await this.getActualProdplanByYearAndLine(this.year, this.lineId)
     })
   }
 
@@ -104,6 +107,7 @@ export class ProdplanComponent {
       }
     })
     await this.getProdplanByYearAndLine(this.year, this.lineId)
+    await this.getActualProdplanByYearAndLine(this.year, this.lineId)
   }
 
   async getProdplanByYearAndLine(year: number, lineId: number) {
@@ -123,6 +127,28 @@ export class ProdplanComponent {
           this.getTotalProdplan(this.prodplanData)
           this.getTotalWeeks(this.prodplanData)
           resolve(true)
+        }
+      })
+    })
+  }
+
+  async getActualProdplanByYearAndLine(year: number, lineId: number) {
+    return new Promise((resolve, reject) => {
+      this.isLoading = true;
+      this.apiService.getActualProdplanByLine(year, lineId).subscribe({
+        next: (res: any) => {
+          this.isLoading = false;
+          let data: any[] = res.data
+          this.prodplanData.forEach(plan => {
+            const actualItem = data.find(actual => actual.month === plan.month)
+            plan.actual_id = actualItem ? actualItem.id : null;
+            plan.prodplan_actual = actualItem ? actualItem.prodplan : null;
+          })
+        },
+        error: (err) => {
+          this.isLoading = false;
+          this.common.showServerErrorAlert(Const.ERR_GET_MSG("Actual Prodplan"), err)
+          reject(err)
         }
       })
     })
@@ -157,11 +183,13 @@ export class ProdplanComponent {
   openEditModal(content: any, prodplanData: any) {
     this.modalForm = {
       id: prodplanData.id,
+      actualId: prodplanData.actual_id || null,
       monthId: prodplanData.month,
       month: this.common.getMonthName(prodplanData.month),
       daily: prodplanData.daily_count,
       weekly: prodplanData.weekly_count,
-      prodplan: prodplanData.prodplan
+      prodplan: prodplanData.prodplan,
+      actualProdplan: prodplanData.prodplan_actual || null
     }
 
     this.modalService.open(content, { ariaLabelledBy: 'modal-basic-title' }).result.then(
@@ -171,19 +199,30 @@ export class ProdplanComponent {
   }
 
 
-  onEditChange() {
-    const id = this.modalForm.id
-    const data = {
+  async onEditChange() {
+    const prodplanData = {
       daily_count: this.modalForm.daily, 
       weekly_count: this.modalForm.weekly, 
       prodplan: this.modalForm.prodplan
     }
-    this.updateProdplan(id, data)
+    const actualData = {
+      prodplan: this.modalForm.actualProdplan, month: this.modalForm.monthId, year: this.year, line_id: this.lineId
+    }
+
+    await this.updateProdplan(this.modalForm.id, prodplanData).then(async () => {
+      if (this.modalForm.actualId) {
+        await this.updateActualProdplan(this.modalForm.actualId, { prodplan: this.modalForm.actualProdplan ? this.modalForm.actualProdplan : null})
+      } else {
+        await this.insertActualProdplan(actualData)
+      }
+      this.modalService.dismissAll()
+      this.clickSubject.next('subject')
+    })
   }
 
   resetModalValue() {
     this.isLoading = false;
-    this.modalForm = {id: 0, monthId: 0, month: '', daily: 0, weekly: 0, prodplan: 0}
+    this.modalForm = {id: 0, actualId: null, monthId: 0, month: '', daily: 0, weekly: 0, prodplan: 0, actualProdplan: null}
   }
 
   onButtonChangeYear(action: string) {
@@ -292,18 +331,54 @@ export class ProdplanComponent {
     })
   }
 
-  updateProdplan(id: number, data: any) {
-    this.isLoading = true
-    this.apiService.updateProdplan(id, data).subscribe({
-      next: (res: any) => {
-        this.isLoading = false
-        this.getProdplanByYearAndLine(this.year, this.lineId)
-        this.modalService.dismissAll()
-      },
-      error: (err) => {
-        this.isLoading = false
-        this.common.showErrorAlert(Const.ERR_UPDATE_MSG("Prodplan"), err)
-      }
+  async updateProdplan(id: number, data: any) {
+    return new Promise((resolve, reject) => {
+      this.isLoading = true
+      this.apiService.updateProdplan(id, data).subscribe({
+        next: (res: any) => {
+          this.isLoading = false
+          resolve(res)
+        },
+        error: (err) => {
+          this.isLoading = false
+          this.common.showErrorAlert(Const.ERR_UPDATE_MSG("Prodplan"), err)
+          reject(err)
+        }
+      })
+    })
+  }
+
+  async insertActualProdplan(data: any) {
+    return new Promise((resolve, reject) => {
+      this.isLoading = true
+      this.apiService.insertActualProdplan(data).subscribe({
+        next: (res: any) => {
+          this.isLoading = false
+          resolve(res)
+        },
+        error: (err) => {
+          this.isLoading = false
+          this.common.showErrorAlert(Const.ERR_INSERT_MSG("Actual Prodplan"), err)
+          reject(err)
+        }
+      })
+    })
+  }
+
+  async updateActualProdplan(id: number, data: any) {
+    return new Promise((resolve, reject) => {
+      this.isLoading = true
+      this.apiService.updateActualProdplan(id, data).subscribe({
+        next: (res: any) => {
+          this.isLoading = false
+          resolve(res)
+        },
+        error: (err) => {
+          this.isLoading = false
+          this.common.showErrorAlert(Const.ERR_UPDATE_MSG("Actual Prodplan"), err)
+          reject(err)
+        }
+      })
     })
   }
 
@@ -320,15 +395,11 @@ export class ProdplanComponent {
   getpreviousYearProdplan() {
     const previousYear = this.year - 1
     this.isLoading = true
-    console.log(previousYear);
-    console.log(this.lineId);
     this.apiService.resetCachedData("prodplanYearLine")
     this.apiService.getProdplanByYearAndLine(previousYear, this.lineId).subscribe({
       next: (res: any) => {
         this.isLoading = false
         let previousYearData: any[] = res.data
-        console.log(previousYearData);
-        
         if (previousYearData.length > 0) {
           for (let i in previousYearData) {
             this.temporaryProdplan[i].prodplan = +previousYearData[i].prodplan * (this.prevProdplanPercentage / 100)

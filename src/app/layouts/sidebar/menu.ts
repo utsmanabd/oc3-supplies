@@ -14,7 +14,7 @@ export const MENU: MenuItem[] = [
   {
     id: createMenuId(),
     label: 'Dashboard',
-    icon: 'home',
+    icon: 'grid',
     link: ''
   },
   {
@@ -26,7 +26,7 @@ export const MENU: MenuItem[] = [
   {
     id: createMenuId(),
     label: 'Prodplan',
-    icon: 'list',
+    icon: 'file-text',
     link: 'prodplan'
   },
   {
@@ -37,7 +37,7 @@ export const MENU: MenuItem[] = [
   {
     id: createMenuId(),
     label: 'Material',
-    icon: 'box',
+    icon: 'package',
     link: 'master/material'
   },
   {
@@ -48,10 +48,16 @@ export const MENU: MenuItem[] = [
   },
   {
     id: createMenuId(),
-    label: 'Calculation Budget',
-    icon: 'percent',
-    link: 'master/calc-budget'
+    label: 'Factory Line',
+    icon: 'list',
+    link: 'master/factory-line'
   },
+  // {
+  //   id: createMenuId(),
+  //   label: 'Calculation Budget',
+  //   icon: 'percent',
+  //   link: 'master/calc-budget'
+  // },
   {
     id: createMenuId(),
     label: 'Users',
