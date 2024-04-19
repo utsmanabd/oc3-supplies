@@ -243,13 +243,15 @@
         <div class="p-2">
           <div class="row g-3">
             <div class="col-md-3 col-sm-6">
-              <label for="typeahead-http-costctr">Section / Cost Center</label>
-              <input id="typeahead-http-costctr" type="text" class="form-control"
+              <label>Section / Cost Center</label>
+              <select class="form-select" [(ngModel)]="selectedCostCenter.id">
+                <option *ngFor="let item of costCenterData" value="{{ item.id }}">{{ item.section }} ({{ item.cost_ctr }})</option>
+              </select>
+              <!-- <input id="typeahead-http-costctr" type="text" class="form-control"
                 (ngModelChange)="onCostCenterFormSearch()" [(ngModel)]="costCenter" [ngbTypeahead]="searchCostCenter"
                 [editable]="false" [inputFormatter]="costCenterFormatter" [resultFormatter]="costCenterFormatter"
                 placeholder="Search for cost center" />
-              <small *ngIf="costCenterSearching" class="form-text text-muted">Searching...</small>
-              <!-- <h4>{{costCenter | json}}</h4> -->
+              <small *ngIf="costCenterSearching" class="form-text text-muted">Searching...</small> -->
             </div>
             <div class="col-md-3 col-sm-6">
               <label for="typeahead-http">Material</label>
@@ -260,8 +262,8 @@
               <small *ngIf="materialSearching" class="form-text text-muted">Searching...</small>
               <small *ngIf="searchLength" class="form-text text-muted">Type at least {{ 3 - searchLength }} more
                 character</small>
-              <small *ngIf="!isNotHaveAveragePrice && avgPrice" class="form-text text-info">Average price: {{
-                common.getRupiahFormat(avgPrice) }}</small>
+              <small *ngIf="!isNotHaveAveragePrice && avgPrice && !materialSearching && material" class="form-text text-muted">Average price ({{ _year }}) : 
+               <span class="text-info">{{ common.getRupiahFormat(avgPrice) }}</span></small>
               <!-- <h4>{{material | json}}</h4> -->
             </div>
             <div class="col-md-3 col-sm-6">
@@ -276,13 +278,16 @@
               <input [(ngModel)]="bom" placeholder="Input BOM" type="number" class="form-control" id="bom" name="bom">
             </div>
             <div *ngIf="isNotHaveAveragePrice" class="col-md-3 col-sm-6">
-              <label for="avgPrice">Average Price</label>
-              <input [(ngModel)]="avgPrice" placeholder="Input average price" type="number" class="form-control"
+              <label for="avgPrice">Average Price ({{ _year }})</label>
+              <div class="input-group">
+                <span class="input-group-text">Rp</span>
+                <input [(ngModel)]="avgPrice" placeholder="Input average price" type="number" class="form-control"
                 id="avgPrice" name="avgPrice">
+              </div>
             </div>
             <div class="mt-2">
               <small *ngIf="isNotHaveAveragePrice && !avgPrice" class="form-text text-danger">*The selected material
-                does not have an average price. Please fill in the average price column first!</small>
+                does not have an average price in {{ _year }}. Please fill in the average price column first!</small>
             </div>
           </div>
 

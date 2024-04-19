@@ -91,7 +91,7 @@
 
 <ng-template #content let-modal>
   <div class="modal-header">
-    <h4 class="modal-title">Add Cost Center</h4>
+    <h4 class="modal-title">{{ costCenterId ? 'Update' : 'Add' }} Cost Center</h4>
     <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
   </div>
   <div class="modal-body" *ngIf="countriesData.length > 0 && lineData.length > 0">

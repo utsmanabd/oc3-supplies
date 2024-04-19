@@ -90,6 +90,13 @@ export class restApiService {
     )
   }
 
+  requestHttpDelete(urlParams: string, id: number, isIgnoredErrorHandling = false): Observable<any> {
+    return this.http.delete(GlobalComponent.MASTER_API_URL + urlParams +`/${id}`, httpOptions).pipe(
+      tap(() => this.resetCachedData()),
+      this.beginErrorHandling(isIgnoredErrorHandling)
+    )
+  }
+
   // Employee / Users API
   getEmployeeData(term: string) {
     if (term === "") {
@@ -121,6 +128,24 @@ export class restApiService {
   getUserRole() {
     const cacheKey = "roles"
     return this.requestCachedHttpGet('users/role', cacheKey)
+  }
+
+  searchUsersByPagination(term: string, page: number, pageSize: number) {
+    return this.http.post(GlobalComponent.MASTER_API_URL + `users/search-pagination?page=${page}&pageSize=${pageSize}`, { search: term }, httpOptions).pipe(
+      catchError(this.handleError)
+    )
+  }
+
+  insertUser(data: any) {
+    return this.requestHttpPost(`users`, data, true)
+  }
+
+  updateUser(id: number, data: any) {
+    return this.requestHttpPut(`users`, id, data, true)
+  }
+
+  deleteUser(id: number) {
+    return this.requestHttpDelete(`users`, id)
   }
 
   // Prodplan API
@@ -171,6 +196,12 @@ export class restApiService {
 
   updateFactoryLine(id: any, data: any) {
     return this.requestHttpPut(`line`, id, data)
+  }
+
+  searchFactoryLineByPagination(term: string, page: number, pageSize: number) {
+    return this.http.post(GlobalComponent.MASTER_API_URL + `line/search-pagination?page=${page}&pageSize=${pageSize}`, { search: term }, httpOptions).pipe(
+      catchError(this.handleError)
+    )
   }
 
   // Supplies Budget API
@@ -292,6 +323,10 @@ export class restApiService {
 
   updateCostCenter(id: number, data: any) {
     return this.requestHttpPut(`costctr`, id, data)
+  }
+
+  getCostCenterByLineId(lineId: number) {
+    return this.requestHttpGet(`costctr/line/${lineId}`)
   }
 
   // Dummy API

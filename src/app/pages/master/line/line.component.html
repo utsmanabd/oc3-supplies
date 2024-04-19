@@ -1,1 +1,109 @@
-<p>line works!</p>
+<ngx-loading [show]="isLoading"></ngx-loading>
+<app-breadcrumbs
+  title="Master Factory Line"
+  [breadcrumbItems]="breadCrumbItems"
+></app-breadcrumbs>
+<div class="card">
+  <div class="card-header">
+    <div class="row g-4">
+      <div class="col-sm-auto">
+        <div class="d-flex gap-1">
+          <button type="button" class="btn btn-success add-btn" id="create-btn" (click)="openModal(content)">
+            <i class="ri-add-line align-bottom me-1"></i> Add
+          </button>
+        </div>
+      </div>
+      <div class="col-sm">
+        <div class="d-flex justify-content-sm-end">
+          <div class="search-box ms-2">
+            <input
+              type="text"
+              class="form-control search"
+              placeholder="Search..."
+              [(ngModel)]="searchTerm"
+              (input)="searchSubject.next(searchTerm)"
+            />
+            <i class="ri-search-line search-icon"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body table-responsive">
+      <table class="table table-hover table-striped">
+        <thead>
+          <tr>
+            <th *ngFor="let col of tableColumns" scope="col">{{ col }}</th>
+          </tr>
+        </thead>
+        <tbody *ngIf="lineData.length > 0">
+          <tr *ngFor="let data of lineData; let i = index">
+            <th scope="row">{{ calculateStartingIndex(i) }}</th>
+            <td>{{ data.name }}</td>
+            <td>{{ data.detail }}</td>
+            <td>
+              <a
+                ngbTooltip="Edit"
+                placement="start"
+                class="mt-1 mb-1 btn btn-sm btn-soft-success me-2"
+                (click)="openModal(content, data)"
+              >
+                <i class="ri ri-edit-2-line"></i>
+              </a>
+              <button
+                ngbTooltip="Delete"
+                placement="end"
+                type="button"
+                class="mt-1 mb-1 btn btn-soft-danger btn-sm"
+                (click)="onDeleteLine(data.id)"
+              >
+                <i class="ri ri-delete-bin-line"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer">
+      <div class="d-flex justify-content-center">
+        <ngb-pagination
+          [collectionSize]="totalItems"
+          [maxSize]="3"
+          [(page)]="currentPage"
+          [pageSize]="pageSize"
+          (pageChange)="
+            searchFactoryLineByPagination(searchTerm, currentPage, pageSize)"
+        >
+        </ngb-pagination>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #content let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title">{{ lineId ? 'Update' : ' Add' }} Factory Line</h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
+  </div>
+  <div class="modal-body" *ngIf="lineData.length > 0">
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="p-2">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Line Name</label>
+              <input [(ngModel)]="form.name" placeholder="Input Factory Line" type="text" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Detail</label>
+              <input [(ngModel)]="form.detail" placeholder="Input Detail (Optional)" type="text" class="form-control">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <small *ngIf="isFormInvalid" class="form-text text-danger">Please fill all the field above!</small>
+    <button type="button" class="btn btn-success" (click)="onSaveChanges()">Save</button>
+  </div>
+</ng-template>

@@ -12,7 +12,7 @@ import { Const } from 'src/app/core/static/const';
   styleUrls: ['./cost-center.component.scss']
 })
 export class CostCenterComponent {
-  tableColumns = ["#", "Cost Center", "Section", "Line", "Language", "CoAR", "CoCD", "CCTC", "Valid From", "Valid To", "Action"]
+  tableColumns = ["#", "Cost Center", "Section", "Line", "Language", "COAR", "COCD", "CCTC", "Valid From", "Valid To", "Action"]
 
   isLoading = false;
   costCtrData: any[] = []

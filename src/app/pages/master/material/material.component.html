@@ -87,8 +87,11 @@
               </ng-template>
             </div>
             <div class="col-lg-9 col-sm-6">
-              <label class="form-label" for="avgPrice">Average Price (Rp)</label>
-              <input [(ngModel)]="material.average_price" [disabled]="year <= 0" placeholder="Input Average Price" type="number" class="form-control" id="avgPrice" name="avgPrice">
+              <label class="form-label" for="avgPrice">Average Price ({{ year }})</label>
+              <div class="input-group">
+                <span class="input-group-text">Rp</span>
+                <input [(ngModel)]="material.average_price" [disabled]="year <= 0" placeholder="Input Average Price" type="number" class="form-control" id="avgPrice" name="avgPrice">
+              </div>
             </div>
             <div class="col-lg-3 col-sm-6">
               <label class="form-label">Year (avg. price in)</label>

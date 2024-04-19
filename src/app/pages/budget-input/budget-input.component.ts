@@ -107,7 +107,13 @@ export class BudgetInputComponent {
   bom!: number | null
   material: any
 
-  costCenter: any
+  // costCenter: any
+  costCenterData: any[] = []
+  selectedCostCenter = {
+    id: '',
+    section: '',
+    cost_ctr: ''
+  }
 
   materialSearching = false;
   costCenterSearching = false;
@@ -199,6 +205,7 @@ export class BudgetInputComponent {
             this.onSupplyFilter(null, this.selectedMonthFilter, this.selectedSectionFilter)
           }
         })
+        await this.getCostCenterByLineId(this.selectedLine.lineId)
         await this.getProdplanByYearAndLine(this.year, this.selectedLine.lineId, true)
       })
   }
@@ -214,6 +221,7 @@ export class BudgetInputComponent {
         this.getTotalPrice(this.suppliesData)
       })
       await this.getProdplanByYearAndLine(this.year, this.selectedLine.lineId)
+      await this.getCostCenterByLineId(this.selectedLine.lineId)
     }
 
     const params = this.route.snapshot.queryParams;
@@ -400,6 +408,27 @@ export class BudgetInputComponent {
     })
   }
 
+  async getCostCenterByLineId(lineId: number) {
+    return new Promise((resolve, reject) => {
+      this.apiService.getCostCenterByLineId(lineId).subscribe({
+        next: (res: any) => {
+          this.costCenterData = res.data;
+          this.selectedCostCenter = {
+            id: this.costCenterData[0].id,
+            section: `${this.costCenterData[0].section}`,
+            cost_ctr: `${this.costCenterData[0].cost_ctr}`
+          }
+          console.log(this.costCenterData);
+          resolve(true)
+        },
+        error: (err) => {
+          this.common.showServerErrorAlert(Const.ERR_GET_MSG("Cost Center"), err)
+          reject(err)
+        }
+      })
+    })
+  }
+
   getTotalPrice(suppliesData: any[]) {
     let planPrice = 0
     let actualPrice = 0
@@ -542,13 +571,13 @@ export class BudgetInputComponent {
     }, 50)
   }
 
-  onCostCenterFormSearch() {
-    setTimeout(() => {
-      if (this.costCenter) {
+  // onCostCenterFormSearch() {
+  //   setTimeout(() => {
+  //     if (this.costCenter) {
 
-      }
-    }, 50)
-  }
+  //     }
+  //   }, 50)
+  // }
 
   async onFactoryLineChange(event: any) {
     if (event.target.value) {
@@ -595,7 +624,7 @@ export class BudgetInputComponent {
     } else {
       if (data) {
         const avgData = await this.getAvgPriceByCodeAndYear(data.material_code, this.year)
-        this.costCenter = { id: data.cost_ctr_id, section: data.section, cost_ctr: data.cost_center }
+        this.selectedCostCenter = { id: data.cost_ctr_id, section: data.section, cost_ctr: data.cost_center }
         this.material = { id: data.material_id, material_code: data.material_code, material_desc: data.material_desc, average_price: data.average_price }
         this.bom = data.bom
         this.selectedCalculationBy.id = data.calculation_id
@@ -608,7 +637,8 @@ export class BudgetInputComponent {
         (result) => this.resetModalValue(),
         (reason) => {
           if (reason == 'Edit') {
-            this.costCenter = undefined;
+            Object.keys(this.selectedCostCenter).forEach(key => (this.selectedCostCenter as any)[key] = '')
+            // this.costCenter = undefined;
           }
           this.resetModalValue()
         }
@@ -628,7 +658,7 @@ export class BudgetInputComponent {
   }
 
   async onAddSupply() {
-    if (this.material && this.bom && this.avgPrice && this.prodplanData && this.costCenter) {
+    if (this.material && this.bom && this.avgPrice && this.prodplanData && Object.keys(this.selectedCostCenter).every(key => (this.selectedCostCenter as any)[key])) {
       this.isFormInvalid = false
       if (!this.material.average_price) {
         const avgData = await this.getAvgPriceByCodeAndYear(this.material.material_code, this.year)
@@ -726,7 +756,7 @@ export class BudgetInputComponent {
 
   async saveChanges(isEditMode: boolean = false) {
     const data: any[] = []
-    const budgetId = `${this.year}-${this.selectedLine.lineId}-${this.costCenter.id}-${this.material.id}`
+    const budgetId = `${this.year}-${this.selectedLine.lineId}-${this.selectedCostCenter.id}-${this.material.id}`
     const bom = this.bom ? this.bom! : 0
 
     this.prodplanData.forEach(item => {
@@ -752,7 +782,7 @@ export class BudgetInputComponent {
       data.push({
         budget_id: budgetId,
         material_id: this.material.id,
-        cost_ctr_id: this.costCenter.id,
+        cost_ctr_id: +this.selectedCostCenter.id,
         calc_budget_id: this.selectedCalculationBy.id,
         prodplan_id: item.id,
         bom: bom,
@@ -765,7 +795,7 @@ export class BudgetInputComponent {
 
     const budgetIdNotAvailable = () => {
       this.isLoading = false
-      return this.common.showErrorAlert(`The material is already exist on ${this.costCenter.section}`, `Failed`)
+      return this.common.showErrorAlert(`The material is already exist on ${this.selectedCostCenter.section}`, `Failed`)
     }
 
     if (this.budgetId !== budgetId) {
