@@ -19,7 +19,7 @@ export const MENU: MenuItem[] = [
   },
   {
     id: createMenuId(),
-    label: 'Supplies',
+    label: 'Supplies & Budget',
     icon: 'layers',
     link: 'supplies'
   },
@@ -28,7 +28,10 @@ export const MENU: MenuItem[] = [
     label: 'Prodplan',
     icon: 'file-text',
     link: 'prodplan'
-  },
+  }
+];
+
+export const MASTER_MENU: MenuItem[] = [
   {
     id: createMenuId(),
     label: 'Master Data',
@@ -36,19 +39,19 @@ export const MENU: MenuItem[] = [
   },
   {
     id: createMenuId(),
-    label: 'Material',
+    label: 'Manage Material',
     icon: 'package',
     link: 'master/material'
   },
   {
     id: createMenuId(),
-    label: 'Cost Center',
+    label: 'Manage Cost Center',
     icon: 'dollar-sign',
     link: 'master/cost-center'
   },
   {
     id: createMenuId(),
-    label: 'Factory Line',
+    label: 'Manage Factory Line',
     icon: 'list',
     link: 'master/factory-line'
   },
@@ -60,12 +63,8 @@ export const MENU: MenuItem[] = [
   // },
   {
     id: createMenuId(),
-    label: 'Users',
+    label: 'Manage Users',
     icon: 'users',
     link: 'master/users'
-  },
-];
-
-// export const MASTER_MENU: MenuItem[] = [
-  
-// ]
+  }
+]

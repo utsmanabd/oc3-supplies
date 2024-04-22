@@ -23,7 +23,7 @@
 </div>
 <div class="card">
   <div class="card-header">
-    <div class="row g-4">
+    <div class="row g-4" *ngIf="userData.role_name == 'Admin'">
       <div class="col-sm-auto">
         <div class="d-flex gap-1">
           <button [disabled]="isTabOpen.comparison" (click)="openUpdateModal(importModal)" type="button" class="btn btn-primary add-btn" id="import-btn">
@@ -46,6 +46,13 @@
       </div>
     </div>
     <div class="row g-3 mt-2" *ngIf="suppliesData.length > 0">
+      <div class="col-xxl-2 col-sm-6" *ngIf="userData.role_name !== 'Admin'">
+        <label>Search</label>
+        <div class="search-box ms-2">
+          <input type="text" class="form-control search" placeholder="Search..." [(ngModel)]="searchKeyword" />
+          <i class="ri-search-line search-icon"></i>
+        </div>
+      </div>
       <div class="col-xxl-2 col-sm-6">
         <label for="monthFilter">Month Filter</label>
         <select (change)="onSupplyFilter($event)" id="monthFilter" class="form-select" [(ngModel)]="selectedMonthFilter">
@@ -138,9 +145,9 @@
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink4" ngbDropdownMenu>
                   <li><a class="dropdown-item" (click)="openDetailModal(detailModal, data)"
                       href="javascript:void(0);"><i class="ri ri-eye-line me-2"></i>Detail</a></li>
-                  <li *ngIf="isTabOpen.budgetPlan"><a class="dropdown-item" (click)="openUpdateModal(updateModal, data)"
+                  <li *ngIf="isTabOpen.budgetPlan && userData.role_name == 'Admin'"><a class="dropdown-item" (click)="openUpdateModal(updateModal, data)"
                       href="javascript:void(0);"><i class="ri ri-edit-2-line me-2"></i>Edit</a></li>
-                  <li *ngIf="isTabOpen.budgetPlan"><a class="dropdown-item" (click)="onDeleteSupplyBudget(data)"
+                  <li *ngIf="isTabOpen.budgetPlan && userData.role_name == 'Admin'"><a class="dropdown-item" (click)="onDeleteSupplyBudget(data)"
                       href="javascript:void(0);"><i class="ri ri-delete-bin-line me-2"></i>Delete</a></li>
                 </ul>
               </div>
@@ -247,11 +254,6 @@
               <select class="form-select" [(ngModel)]="selectedCostCenter.id">
                 <option *ngFor="let item of costCenterData" value="{{ item.id }}">{{ item.section }} ({{ item.cost_ctr }})</option>
               </select>
-              <!-- <input id="typeahead-http-costctr" type="text" class="form-control"
-                (ngModelChange)="onCostCenterFormSearch()" [(ngModel)]="costCenter" [ngbTypeahead]="searchCostCenter"
-                [editable]="false" [inputFormatter]="costCenterFormatter" [resultFormatter]="costCenterFormatter"
-                placeholder="Search for cost center" />
-              <small *ngIf="costCenterSearching" class="form-text text-muted">Searching...</small> -->
             </div>
             <div class="col-md-3 col-sm-6">
               <label for="typeahead-http">Material</label>
@@ -264,7 +266,6 @@
                 character</small>
               <small *ngIf="!isNotHaveAveragePrice && avgPrice && !materialSearching && material" class="form-text text-muted">Average price ({{ _year }}) : 
                <span class="text-info">{{ common.getRupiahFormat(avgPrice) }}</span></small>
-              <!-- <h4>{{material | json}}</h4> -->
             </div>
             <div class="col-md-3 col-sm-6">
               <label for="calculationMethod">Calculation By</label>
@@ -418,7 +419,7 @@
       <a class="text-muted" *ngIf="isTabOpen.actual">Actual data on factory line {{ selectedLine.lineName }} in {{ _year }} are not available.</a>
       <a class="text-muted" *ngIf="isTabOpen.comparison">Cannot compare because budgeting data is empty.</a>
     </div>
-    <div class="d-flex justify-content-center" *ngIf="isTabOpen.budgetPlan">
+    <div class="d-flex justify-content-center" *ngIf="isTabOpen.budgetPlan && userData.role_name == 'Admin'">
       <button type="button" class="btn btn-soft-primary" (click)="openPrevModal(prevmodal)">Copy Data From Previous Year</button>
     </div>
   </div>

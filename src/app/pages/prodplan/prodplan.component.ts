@@ -6,6 +6,7 @@ import { Const } from 'src/app/core/static/const';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute } from '@angular/router';
+import { TokenStorageService } from 'src/app/core/services/token-storage.service';
 
 @Component({
   selector: 'app-prodplan',
@@ -49,6 +50,8 @@ export class ProdplanComponent {
     actualProdplan: null
   }
 
+  userData: any
+
   private clickSubject = new Subject()
 
   constructor(
@@ -56,8 +59,11 @@ export class ProdplanComponent {
     public common: CommonService,
     private breakpointObserver: BreakpointObserver,
     private modalService: NgbModal,
+    private tokenService: TokenStorageService,
     private route: ActivatedRoute
   ) {
+    this.userData = tokenService.getUser()
+
     this.year = new Date().getFullYear()
     this._year = this.year
 

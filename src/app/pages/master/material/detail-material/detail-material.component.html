@@ -6,7 +6,7 @@
             <div class="card-header align-items-center d-flex">
                 <h4 class="card-title mb-0 flex-grow-1">Detail</h4>
             </div>
-            <div class="card-body table-responsive">
+            <div class="card-body">
                 <table class="table mb-0">
                     <tbody>
                         <tr>
@@ -27,7 +27,14 @@
                             <th scope="row">UOM</th>
                             <td>
                                 <div *ngIf="!isMaterialEditMode">{{ materialData.uom }}</div>
-                                <input *ngIf="isMaterialEditMode" type="text" class="form-control" style="text-transform: uppercase" [(ngModel)]="materialData.uom">
+                                <div *ngIf="isMaterialEditMode">
+                                    <ng-autocomplete [(ngModel)]="materialData.uom" [data]="uomData" [searchKeyword]="'uom'" placeholder="Input UOM" [itemTemplate]="itemTemplate">
+                                    </ng-autocomplete>
+                                    <ng-template #itemTemplate let-item>
+                                      <a [innerHTML]="item"></a>
+                                    </ng-template>
+                                </div>
+                                <!-- <input *ngIf="isMaterialEditMode" type="text" class="form-control" style="text-transform: uppercase" [(ngModel)]="materialData.uom"> -->
                             </td>
                         </tr>
                         <tr>
@@ -37,7 +44,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="card-footer">
+            <div class="card-footer" *ngIf="userData.role_name == 'Admin'">
                 <div class="d-flex justify-content-between">
                     <button (click)="!isMaterialEditMode ? onMaterialEditModeChange() : onCancelUpdateMaterial()" type="button" class="btn btn-{{ !isMaterialEditMode ? 'success' : 'danger' }}">{{ !isMaterialEditMode ? 'Edit' : 'Cancel' }}</button>
                     <button *ngIf="isMaterialEditMode" (click)="onUpdateMaterial()" type="button" class="btn btn-success">Update</button>
@@ -86,7 +93,7 @@
                     </ng-template>
                 </ngx-simplebar>
             </div>
-            <div class="card-footer">
+            <div class="card-footer" *ngIf="userData.role_name == 'Admin'">
                 <div class="d-flex justify-content-between">
                     <div>
                         <button *ngIf="detailPrice.length > 0" (click)="!isAvgPriceEditMode ? onAvgPriceEditModeChange() : onCancelUpdateAvgPrice()" type="button" class="me-2 btn btn-{{ !isAvgPriceEditMode ? 'success' : 'danger' }}">{{ !isAvgPriceEditMode ? 'Edit' : 'Cancel' }}</button>

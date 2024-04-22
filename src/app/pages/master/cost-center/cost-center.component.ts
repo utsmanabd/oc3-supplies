@@ -147,6 +147,7 @@ export class CostCenterComponent {
       (this.form as any)[key] = '' 
     })
     this.costCenterId = null
+    this.isFormInvalid = false
   }
 
   isFormInvalid: boolean = false

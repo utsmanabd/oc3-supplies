@@ -8,6 +8,7 @@ import { Material } from './material.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GlobalComponent } from 'src/app/global-component';
 import { HttpErrorResponse } from '@angular/common/http';
+import { TokenStorageService } from 'src/app/core/services/token-storage.service';
 
 interface Column {
   name: string | null;
@@ -144,6 +145,8 @@ export class BudgetInputComponent {
   sortedColumn: string = '';
   isAscending: boolean = true;
 
+  userData: any
+
   private refreshFilterSubject = new Subject<string>()
 
   materialFormatter = (mat: Material) => mat.material_code ? `${mat.material_code} - ${mat.material_desc}` : ``
@@ -175,9 +178,12 @@ export class BudgetInputComponent {
     private apiService: restApiService, 
     public common: CommonService, 
     public modalService: NgbModal, 
+    private tokenService: TokenStorageService,
     private router: Router,
     private route: ActivatedRoute
   ) {
+      this.userData = tokenService.getUser()
+
       this.year = new Date().getFullYear();
       this._year = this.year
       this.breadCrumbItems = [
@@ -418,7 +424,6 @@ export class BudgetInputComponent {
             section: `${this.costCenterData[0].section}`,
             cost_ctr: `${this.costCenterData[0].cost_ctr}`
           }
-          console.log(this.costCenterData);
           resolve(true)
         },
         error: (err) => {

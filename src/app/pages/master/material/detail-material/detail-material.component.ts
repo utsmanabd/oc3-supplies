@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { CommonService } from 'src/app/core/services/common.service';
 import { restApiService } from 'src/app/core/services/rest-api.service';
+import { TokenStorageService } from 'src/app/core/services/token-storage.service';
 import { Const } from 'src/app/core/static/const';
 
 interface AveragePrice { 
@@ -36,6 +37,8 @@ export class DetailMaterialComponent {
     year: new Date().getFullYear(),
     average_price: 0,
   }
+  userData: any
+  uomData: string[] = []
 
   isYearExist = false;
 
@@ -46,6 +49,7 @@ export class DetailMaterialComponent {
     private apiService: restApiService, 
     public common: CommonService, 
     private modalService: NgbModal,
+    private tokenService: TokenStorageService,
     private router: Router
     ) {
     this.breadCrumbItems = [
@@ -53,10 +57,12 @@ export class DetailMaterialComponent {
       { label: 'Material Supplies', active: false },
       { label: 'Detail', active: true }
     ];
+    this.userData = tokenService.getUser()
   }
 
   async ngOnInit() {
     this.route.params.subscribe( async params => {
+      this.uomData = await this.getMaterialUOM()
       this.materialData = await this.getDetailMaterial(+params['code'])
       this.materialDataBefore = {...this.materialData}
       this.detailPrice = this.materialData.detail_price.sort((a: any, b: any) => b.year - a.year)
@@ -80,6 +86,23 @@ export class DetailMaterialComponent {
         error: (err) => {
           this.isLoading = false;
           this.common.showServerErrorAlert(Const.ERR_GET_MSG("Material"), err)
+          reject(err)
+        }
+      })
+    })
+  }
+
+  async getMaterialUOM() {
+    return new Promise<any[]>((resolve, reject) => {
+      this.isLoading = true
+      this.apiService.getMaterialUOM().subscribe({
+        next: (res) => {
+          this.isLoading = false
+          resolve(res.data)
+        },
+        error: (err) => {
+          this.isLoading = false
+          this.common.showServerErrorAlert(Const.ERR_GET_MSG("Material UOM"), err)
           reject(err)
         }
       })
@@ -223,7 +246,10 @@ export class DetailMaterialComponent {
     while (!this.detailPrice.every(item => item.year !== this.avgData.year)) {
       this.avgData.year!++
     }
-    this.modalService.open(template)
+    this.modalService.open(template, { centered: true }).result.then(
+      (result) => this.isYearExist = false,
+      (reason) => this.isYearExist = false
+    )
   }
 
   updateMultipleAvgPrice(data: any) {

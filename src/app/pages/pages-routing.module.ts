@@ -4,7 +4,6 @@ import { RouterModule, Routes } from '@angular/router';
 // Component pages
 import { DashboardComponent } from "./dashboard/dashboard.component";
 import { BudgetInputComponent } from './budget-input/budget-input.component';
-import { UserManagementComponent } from './user-management/user-management.component';
 import { ProdplanComponent } from './prodplan/prodplan.component';
 import { UsersComponent } from './master/users/users.component';
 import { CostCenterComponent } from './master/cost-center/cost-center.component';
@@ -12,6 +11,7 @@ import { CalculationBudgetComponent } from './master/calculation-budget/calculat
 import { MaterialComponent } from './master/material/material.component';
 import { DetailMaterialComponent } from './master/material/detail-material/detail-material.component';
 import { LineComponent } from './master/line/line.component';
+import { RoleGuard } from '../core/guards/role.guard';
 
 const routes: Routes = [
     {
@@ -28,27 +28,37 @@ const routes: Routes = [
     },
     {
       path: "master/material",
-      component: MaterialComponent
+      component: MaterialComponent,
+      canActivate: [RoleGuard],
+      data: { expectedRole: "Admin" }
     },
     {
       path: "master/material/:code",
-      component: DetailMaterialComponent
+      component: DetailMaterialComponent,
     },
     {
       path: "master/cost-center",
-      component: CostCenterComponent
+      component: CostCenterComponent,
+      canActivate: [RoleGuard],
+      data: { expectedRole: "Admin" }
     },
     {
       path: "master/factory-line",
-      component: LineComponent
+      component: LineComponent,
+      canActivate: [RoleGuard],
+      data: { expectedRole: "Admin" }
     },
     {
       path: "master/calc-budget",
-      component: CalculationBudgetComponent
+      component: CalculationBudgetComponent,
+      canActivate: [RoleGuard],
+      data: { expectedRole: "Admin" }
     },
     {
       path: "master/users",
-      component: UsersComponent
+      component: UsersComponent,
+      canActivate: [RoleGuard],
+      data: { expectedRole: "Admin" }
     },
 
 ];

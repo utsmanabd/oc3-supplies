@@ -208,89 +208,6 @@ export class DashboardComponent {
     })
   }
 
-  // async getBudgetPerSection(year: number, lineId: number) {
-  //   return new Promise((resolve, reject) => {
-  //     this.isLoading = true;
-  //     this.apiService.getBudgetPerSection(year, lineId).subscribe({
-  //       next: (res: any) => {
-  //         let data: any[] = res.data
-          
-  //         const allMonthsData = Array.from(
-  //           [...data].reduce((acc, { cost_ctr_id, section, price }) => {
-  //               const existingItem = acc.get(cost_ctr_id);
-  //               if (existingItem) {
-  //                   existingItem.price += price;
-  //               } else {
-  //                   acc.set(cost_ctr_id, { cost_ctr_id, section, price });
-  //               }
-  //               return acc;
-  //           }, new Map()),
-  //           ([, value]) => value
-  //         );
-          
-  //         console.log(data);
-  //         console.log(allMonthsData);
-          
-
-  //         this.sectionBudgetData = {
-  //           rawData: allMonthsData,
-  //           categories: [...allMonthsData].map(item => item.section),
-  //           series: [...allMonthsData].map(item => item.price)
-  //         }
-  //       },
-  //       error: (err) => {
-  //         this.isLoading = false
-  //         this.common.showServerErrorAlert(Const.ERR_GET_MSG("Budget Per Section"), err)
-  //         reject(err)
-  //       },
-  //       complete: () => {
-  //         this.isLoading = false;
-  //         resolve(true)
-  //       }
-  //     })
-  //   })
-  // }
-
-  // async getActualPerSection(year: number, lineId: number) {
-  //   return new Promise((resolve, reject) => {
-  //     this.isLoading = true;
-  //     this.apiService.getActualPerSection(year, lineId).subscribe({
-  //       next: (res: any) => {
-  //         let data: any[] = res.data
-
-  //         this.transformBudgetActual(this.sectionBudgetData.rawData!, data, "cost_ctr_id")
-
-  //         this.sectionBudgetData.rawData?.sort((a, b) => a.cost_ctr_id - b.cost_ctr_id);
-  //         this.sectionBudgetData.series = [...this.sectionBudgetData.rawData!].map(item => item.price)
-  //         this.sectionBudgetData.categories = [...this.sectionBudgetData.rawData!].map(item => item.section)
-
-  //         data.sort((a, b) => a.cost_ctr_id - b.cost_ctr_id);
-
-  //         this.sectionActualData = {
-  //           rawData: data,
-  //           categories: [...data].map(item => item.section),
-  //           series: [...data].map(item => item.price)
-  //         }
-
-  //         this.sectionData = [...data].map(item => { return { sectionId: item.cost_ctr_id, section: item.section } }).sort((a, b) => a.sectionId - b.sectionId)
-  //         this.selectedSection = {
-  //           id: this.sectionData[0].sectionId,
-  //           name: this.sectionData[0].section
-  //         }
-  //       },
-  //       error: (err) => {
-  //         this.isLoading = false
-  //         this.common.showServerErrorAlert(Const.ERR_GET_MSG("Actual Per Section"), err)
-  //         reject(err)
-  //       },
-  //       complete: () => {
-  //         this.isLoading = false;
-  //         resolve(true)
-  //       }
-  //     })
-  //   })
-  // }
-
   async getBudgetPerSupply(year: number, lineId: number) {
     return new Promise((resolve, reject) => {
       this.isLoading = true;
@@ -643,16 +560,7 @@ export class DashboardComponent {
 
   
   onLineMonthChange(month: any) {
-    console.log(month);
-    
     this.selectedMonth = { number: month.number, name: month.name }
-    console.log('sectionBudgetBefore: ', this.sectionBudgetBefore);
-    console.log('sectionActualBefore: ', this.sectionActualBefore);
-    
-    const filter = [...this.sectionBudgetMonthHeatmapData.rawData!].filter(item => item.month === this.selectedMonth.number)
-    console.log(filter);
-    
-
     if (this.selectedMonth.number !== -1) {
       this.sectionBudgetData.series = [...this.sectionBudgetMonthHeatmapData.rawData!].filter(item => item.month === this.selectedMonth.number).map(i => i.price)
       this.sectionActualData.series = [...this.sectionActualMonthHeatmapData.rawData!].filter(item => item.month === this.selectedMonth.number).map(i => i.price)
@@ -660,11 +568,6 @@ export class DashboardComponent {
       this.sectionBudgetData.series = [...this.sectionBudgetBefore]
       this.sectionActualData.series = [...this.sectionActualBefore]
     }
-
-    console.log('budget: ', this.sectionBudgetData.series);
-    console.log('actual: ', this.sectionActualData.series);
-    
-    
     
     this.setSectionBudgetChartValue()
   }
@@ -678,11 +581,6 @@ export class DashboardComponent {
   async changeFactoryLine(lineId: number) {
     const index = this.common.getIndexById(this.lineData, lineId, "lineId")
     this.selectedLine = { id: lineId, name: this.lineData[index].line }
-    // await this.getBudgetPerSection(this.year, lineId)
-    // await this.getActualPerSection(this.year, lineId).then(() => {
-    //   this.setSectionBudgetChartValue()
-    //   this.setTotaLineBudgetChartValue(this.isTabOpen.actual)
-    // })
     await this.getBudgetPerSupply(this.year, lineId).then(() => {
       if (this.isTabOpen.budget) {
         this.lineFiveBiggestSupply = this.lineFiveBiggestBudget
@@ -735,7 +633,7 @@ export class DashboardComponent {
   }
 
   setTotaLineBudgetChartValue(isActual = false) {
-    this.totalLineBudgetDonutChart.series = isActual ? this.sectionActualData.series : this.sectionBudgetData.series
+    this.totalLineBudgetDonutChart.series = isActual ? this.sectionActualBefore : this.sectionBudgetBefore
     this.totalLineBudgetDonutChart.labels = isActual ? this.sectionActualData.categories : this.sectionBudgetData.categories
   }
 
@@ -1093,7 +991,7 @@ export class DashboardComponent {
   private _totalLineBudgetDonutChart(colors: any) {
     colors = this.getChartColorsArray(colors);
     this.totalLineBudgetDonutChart = {
-      series: this.sectionBudgetData.series,
+      series: this.sectionBudgetBefore,
       labels: this.sectionBudgetData.categories,
       chart: {
         type: "donut",

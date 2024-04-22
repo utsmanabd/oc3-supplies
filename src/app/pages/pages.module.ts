@@ -21,10 +21,7 @@ import lottie from 'lottie-web';
 import { PagesRoutingModule } from "./pages-routing.module";
 import { SharedModule } from "../shared/shared.module";
 import { DashboardComponent } from './dashboard/dashboard.component';
-import { ToastsContainer } from './dashboards/dashboard/toasts-container.component';
 import { BudgetInputComponent } from './budget-input/budget-input.component';
-import { UserManagementComponent } from './user-management/user-management.component';
-import { UserSortableHeader } from './user-management/users-sort.directive';
 import { ProdplanComponent } from './prodplan/prodplan.component';
 import { MaterialComponent } from './master/material/material.component';
 import { CostCenterComponent } from './master/cost-center/cost-center.component';
@@ -32,21 +29,20 @@ import { CalculationBudgetComponent } from './master/calculation-budget/calculat
 import { UsersComponent } from './master/users/users.component';
 import { DetailMaterialComponent } from './master/material/detail-material/detail-material.component';
 import { LineComponent } from './master/line/line.component';
+import { NotFoundComponent } from './not-found/not-found.component';
 
 @NgModule({
   declarations: [
     DashboardComponent,
-    ToastsContainer,
     BudgetInputComponent,
-    UserManagementComponent,
-    UserSortableHeader,
     ProdplanComponent,
     MaterialComponent,
     CostCenterComponent,
     CalculationBudgetComponent,
     UsersComponent,
     DetailMaterialComponent,
-    LineComponent
+    LineComponent,
+    NotFoundComponent
   ],
   imports: [
     CommonModule,

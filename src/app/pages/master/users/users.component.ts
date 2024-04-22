@@ -157,8 +157,6 @@ export class UsersComponent {
   }
 
   onSaveChanges() {
-    console.log(this.form);
-    
     const isFormFilled = Object.keys(this.form).every(key => (this.form as any)[key])
     if (isFormFilled) {
       this.isFormInvalid = false

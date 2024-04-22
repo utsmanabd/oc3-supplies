@@ -28,53 +28,53 @@
         </div>
       </div>
     </div>
-    <div class="card-body table-responsive">
-      <table class="table table-hover table-striped">
-        <thead>
-          <tr>
-            <th *ngFor="let col of tableColumns" scope="col">{{ col }}</th>
-          </tr>
-        </thead>
-        <tbody *ngIf="lineData.length > 0">
-          <tr *ngFor="let data of lineData; let i = index">
-            <th scope="row">{{ calculateStartingIndex(i) }}</th>
-            <td>{{ data.name }}</td>
-            <td>{{ data.detail }}</td>
-            <td>
-              <a
-                ngbTooltip="Edit"
-                placement="start"
-                class="mt-1 mb-1 btn btn-sm btn-soft-success me-2"
-                (click)="openModal(content, data)"
-              >
-                <i class="ri ri-edit-2-line"></i>
-              </a>
-              <button
-                ngbTooltip="Delete"
-                placement="end"
-                type="button"
-                class="mt-1 mb-1 btn btn-soft-danger btn-sm"
-                (click)="onDeleteLine(data.id)"
-              >
-                <i class="ri ri-delete-bin-line"></i>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="card-footer">
-      <div class="d-flex justify-content-center">
-        <ngb-pagination
-          [collectionSize]="totalItems"
-          [maxSize]="3"
-          [(page)]="currentPage"
-          [pageSize]="pageSize"
-          (pageChange)="
-            searchFactoryLineByPagination(searchTerm, currentPage, pageSize)"
-        >
-        </ngb-pagination>
-      </div>
+  </div>
+  <div class="card-body table-responsive">
+    <table class="table table-hover table-striped">
+      <thead>
+        <tr>
+          <th *ngFor="let col of tableColumns" scope="col">{{ col }}</th>
+        </tr>
+      </thead>
+      <tbody *ngIf="lineData.length > 0">
+        <tr *ngFor="let data of lineData; let i = index">
+          <th scope="row">{{ calculateStartingIndex(i) }}</th>
+          <td>{{ data.name }}</td>
+          <td>{{ data.detail }}</td>
+          <td>
+            <a
+              ngbTooltip="Edit"
+              placement="start"
+              class="mt-1 mb-1 btn btn-sm btn-soft-success me-2"
+              (click)="openModal(content, data)"
+            >
+              <i class="ri ri-edit-2-line"></i>
+            </a>
+            <button
+              ngbTooltip="Delete"
+              placement="end"
+              type="button"
+              class="mt-1 mb-1 btn btn-soft-danger btn-sm"
+              (click)="onDeleteLine(data.id)"
+            >
+              <i class="ri ri-delete-bin-line"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">
+    <div class="d-flex justify-content-center">
+      <ngb-pagination
+        [collectionSize]="totalItems"
+        [maxSize]="3"
+        [(page)]="currentPage"
+        [pageSize]="pageSize"
+        (pageChange)="
+          searchFactoryLineByPagination(searchTerm, currentPage, pageSize)"
+      >
+      </ngb-pagination>
     </div>
   </div>
 </div>

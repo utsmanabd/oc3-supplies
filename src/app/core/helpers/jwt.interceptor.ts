@@ -6,17 +6,11 @@ import {
     HttpInterceptor,
 } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
-import { AuthenticationService } from '../services/auth.service';
-import { AuthfakeauthenticationService } from '../services/authfake.service';
-import { environment } from '../../../environments/environment';
 import { TokenStorageService } from '../services/token-storage.service';
 
 @Injectable()
 export class JwtInterceptor implements HttpInterceptor {
     constructor(
-        private authenticationService: AuthenticationService,
-        private authfackservice: AuthfakeauthenticationService,
         private tokenStorageService: TokenStorageService
     ) { }
 

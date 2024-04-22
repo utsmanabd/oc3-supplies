@@ -3,10 +3,7 @@ import { FormBuilder, FormGroup, Validators } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 
 // Login Auth
-import { environment } from "../../../environments/environment";
 import { AuthenticationService } from "../../core/services/auth.service";
-import { AuthfakeauthenticationService } from "../../core/services/authfake.service";
-import { first } from "rxjs/operators";
 import { ToastService } from "./toast-service";
 import { TokenStorageService } from "src/app/core/services/token-storage.service";
 import { HttpErrorResponse } from "@angular/common/http";

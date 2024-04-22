@@ -28,63 +28,63 @@
         </div>
       </div>
     </div>
-    <div class="card-body table-responsive">
-      <table class="table table-hover table-striped">
-        <thead>
-          <tr>
-            <th *ngFor="let col of tableColumns" scope="col">{{ col }}</th>
-          </tr>
-        </thead>
-        <tbody *ngIf="costCtrData.length > 0">
-          <tr *ngFor="let data of costCtrData; let i = index">
-            <th scope="row">{{ calculateStartingIndex(i) }}</th>
-            <td>{{ data.cost_ctr }}</td>
-            <td>{{ data.section }}</td>
-            <td *ngIf="data.line">{{ data.line }}</td>
-            <td *ngIf="!data.line">
-              <small class="text-muted">Not specified yet</small>
-            </td>
-            <td>{{ data.language }}</td>
-            <td>{{ data.coar }}</td>
-            <td>{{ data.cocd }}</td>
-            <td>{{ data.cctc }}</td>
-            <td>{{ data.valid_from | date }}</td>
-            <td>{{ data.valid_to | date }}</td>
-            <td>
-              <a
-                ngbTooltip="Edit"
-                placement="start"
-                class="mt-1 mb-1 btn btn-sm btn-soft-success me-2"
-                (click)="openModal(content, data)"
-              >
-                <i class="ri ri-edit-2-line"></i>
-              </a>
-              <button
-                ngbTooltip="Delete"
-                placement="end"
-                type="button"
-                class="mt-1 mb-1 btn btn-soft-danger btn-sm"
-                (click)="onDeleteCostCenter(data.id)"
-              >
-                <i class="ri ri-delete-bin-line"></i>
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="card-footer">
-      <div class="d-flex justify-content-center">
-        <ngb-pagination
-          [collectionSize]="totalItems"
-          [maxSize]="3"
-          [(page)]="currentPage"
-          [pageSize]="pageSize"
-          (pageChange)="
-            searchCostCenterWithPagination(searchTerm, currentPage, pageSize)"
-        >
-        </ngb-pagination>
-      </div>
+  </div>
+  <div class="card-body table-responsive">
+    <table class="table table-hover table-striped">
+      <thead>
+        <tr>
+          <th *ngFor="let col of tableColumns" scope="col">{{ col }}</th>
+        </tr>
+      </thead>
+      <tbody *ngIf="costCtrData.length > 0">
+        <tr *ngFor="let data of costCtrData; let i = index">
+          <th scope="row">{{ calculateStartingIndex(i) }}</th>
+          <td>{{ data.cost_ctr }}</td>
+          <td>{{ data.section }}</td>
+          <td *ngIf="data.line">{{ data.line }}</td>
+          <td *ngIf="!data.line">
+            <small class="text-muted">Not specified yet</small>
+          </td>
+          <td>{{ data.language }}</td>
+          <td>{{ data.coar }}</td>
+          <td>{{ data.cocd }}</td>
+          <td>{{ data.cctc }}</td>
+          <td>{{ data.valid_from | date }}</td>
+          <td>{{ data.valid_to | date }}</td>
+          <td>
+            <a
+              ngbTooltip="Edit"
+              placement="start"
+              class="mt-1 mb-1 btn btn-sm btn-soft-success me-2"
+              (click)="openModal(content, data)"
+            >
+              <i class="ri ri-edit-2-line"></i>
+            </a>
+            <button
+              ngbTooltip="Delete"
+              placement="end"
+              type="button"
+              class="mt-1 mb-1 btn btn-soft-danger btn-sm"
+              (click)="onDeleteCostCenter(data.id)"
+            >
+              <i class="ri ri-delete-bin-line"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">
+    <div class="d-flex justify-content-center">
+      <ngb-pagination
+        [collectionSize]="totalItems"
+        [maxSize]="3"
+        [(page)]="currentPage"
+        [pageSize]="pageSize"
+        (pageChange)="
+          searchCostCenterWithPagination(searchTerm, currentPage, pageSize)"
+      >
+      </ngb-pagination>
     </div>
   </div>
 </div>
