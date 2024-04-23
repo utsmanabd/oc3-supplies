@@ -18,9 +18,9 @@ export const GlobalComponent = {
     refreshToken: 'update-token',
 
     // Local Storage
-    REFRESH_TOKEN_KEY: 'refreshToken',
-    TOKEN_KEY: 'token',
-    USER_KEY: 'currentUser',
+    REFRESH_TOKEN_KEY: 'SBM_refreshToken',
+    TOKEN_KEY: 'SBM_token',
+    USER_KEY: 'SBM_currentUser',
 
     // Crypto Token
     USER_ENCRYPTION_KEY: 'intern-prodOC3-1',
